@@ -1,0 +1,108 @@
+.nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--bottom-nav-height);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  justify-content: center;
+  padding: 0 0 env(safe-area-inset-bottom, 0);
+  transform: translateY(0);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hidden {
+  transform: translateY(100%);
+}
+
+.inner {
+  width: 100%;
+  max-width: var(--content-max-width);
+  display: flex;
+  align-items: stretch;
+  height: var(--bottom-nav-height);
+}
+
+.item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  color: #B0B0B0;
+  text-decoration: none;
+  transition: color 0.15s;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.item:hover {
+  color: #707070;
+}
+
+.item.active {
+  color: var(--color-primary);
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  position: relative;
+}
+
+.label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+/* 중앙 FAB */
+.fab {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+}
+
+.fab::before {
+  content: '';
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(224, 49, 49, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.fab svg {
+  position: relative;
+  z-index: 1;
+}
+
+.fab:hover::before {
+  transform: scale(1.06);
+  box-shadow: 0 6px 18px rgba(224, 49, 49, 0.5);
+}
+
+.fab:active::before {
+  transform: scale(0.94);
+  box-shadow: 0 2px 8px rgba(224, 49, 49, 0.3);
+}

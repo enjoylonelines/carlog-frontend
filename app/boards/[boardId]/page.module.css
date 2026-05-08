@@ -1,0 +1,541 @@
+.wrap {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+/* 상단 바 */
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: 54px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+}
+
+.backBtn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.backBtn:hover {
+  background: #F0F0F0;
+}
+
+.topTitle {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.2px;
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+  min-width: 72px;
+  justify-content: flex-end;
+}
+
+.actionBtn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  border-radius: 8px;
+  transition: background 0.12s, color 0.12s;
+}
+
+.actionBtn:hover {
+  background: #F0F0F0;
+  color: var(--color-text);
+}
+
+.deleteBtn:hover {
+  background: #FFF0F0;
+  color: var(--color-primary);
+}
+
+/* 콘텐츠 영역 */
+.content {
+  padding-bottom: 90px;
+}
+
+/* 작성자 */
+.authorRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 10px;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.authorMeta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.authorName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.postTime {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.followBtn {
+  padding: 5px 16px;
+  border-radius: 20px;
+  border: 1.5px solid var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* 이미지 */
+.imageWrap {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #F0F0F0;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 태그 & 본문 */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 16px 0;
+}
+
+.tag {
+  font-size: 13px;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.bodyText {
+  font-size: 15px;
+  color: var(--color-text);
+  line-height: 1.7;
+  word-break: keep-all;
+  padding: 10px 16px 12px;
+}
+
+/* 통계 */
+.stats {
+  display: flex;
+  gap: 14px;
+  padding: 10px 16px 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* 댓글 섹션 */
+.commentSection {
+  border-top: 6px solid #F0F0F0;
+  padding: 0 0 8px;
+}
+
+.commentHeader {
+  padding: 14px 16px 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.commentCount {
+  color: var(--color-primary);
+}
+
+.noComments {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.commentItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 16px;
+}
+
+.commentAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.commentBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.commentTop {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.commentAuthor {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.commentTime {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.commentText {
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.commentDeleteBtn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.commentDeleteBtn:hover {
+  background: #FFF0F0;
+  color: var(--color-primary);
+}
+
+.commentActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 5px;
+}
+
+.replyBtn {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.replyBtn:hover {
+  color: var(--color-text);
+}
+
+.toggleRepliesBtn {
+  font-size: 12px;
+  color: var(--color-primary);
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toggleRepliesBtn:hover {
+  opacity: 0.75;
+}
+
+.repliesList {
+  padding-left: 54px;
+  border-left: 2px solid #F0F0F0;
+  margin: 0 16px 4px;
+}
+
+.replyItem {
+  padding: 8px 0;
+}
+
+.replyItem .commentAvatar {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+}
+
+/* 답글 입력 표시 바 */
+.replyingToBar {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px 4px;
+}
+
+.replyingToText {
+  font-size: 12px;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.cancelReplyBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  padding: 2px 4px;
+  line-height: 1;
+}
+
+.cancelReplyBtn:hover {
+  color: var(--color-text);
+}
+
+.commentInputSpacer {
+  height: 24px;
+}
+
+/* 댓글 입력 바 */
+.commentBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--color-border);
+  padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0));
+}
+
+.commentBarInner {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.commentBarAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.commentInput {
+  flex: 1;
+  height: 36px;
+  border-radius: 18px;
+  border: 1.5px solid var(--color-border);
+  padding: 0 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.commentInput:focus {
+  border-color: var(--color-primary);
+}
+
+.sendBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: not-allowed;
+  background: #EBEBEB;
+  color: #ABABAB;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.sendBtnActive {
+  background: var(--color-primary);
+  color: white;
+  cursor: pointer;
+}
+
+.sendBtnActive:hover {
+  background: var(--color-primary-hover);
+}
+
+/* 로딩 / 에러 */
+.loadingWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 100vh;
+  color: var(--color-text-secondary);
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.errorText {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+}
+
+/* 삭제 확인 모달 */
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.confirmBox {
+  width: 100%;
+  max-width: 320px;
+  background: var(--color-card);
+  border-radius: 16px;
+  padding: 24px 20px 16px;
+}
+
+.confirmText {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 10px;
+}
+
+.confirmCancel {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-border);
+  background: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.confirmDelete {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  border: none;
+  background: var(--color-primary);
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+}
+
+.confirmDelete:hover {
+  background: var(--color-primary-hover);
+}
