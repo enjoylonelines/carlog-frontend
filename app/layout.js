@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ClientShell from "./ClientShell";
+import AxiosConfig from "@/apis/AxiosConfig";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,6 +22,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ko" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
+        <AxiosConfig/>
         <ClientShell>{children}</ClientShell>
       </body>
     </html>
