@@ -16,9 +16,10 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
   const isEdit = !!initialPost;
 
   const [content, setContent] = useState(initialPost?.content ?? '');
-  const [selectedTags, setSelectedTags] = useState(initialPost?.tags ?? []);
+  const [selectedTags, setSelectedTags] = useState(initialPost?.hashtags ?? []);
   const [hashtags, setHashtags] = useState([]);
   const [preview, setPreview] = useState(initialPost?.imageUrl ?? null);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef(null);
 
@@ -33,6 +34,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setSelectedFile(file);
     setPreview(URL.createObjectURL(file));
   };
 
@@ -46,9 +48,9 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
     if (!content.trim() || submitting) return;
     setSubmitting(true);
     if (isEdit) {
-      await updateBoard({ boardId: initialPost.boardId, content, tags: selectedTags });
+      await updateBoard({ boardId: initialPost.boardId, content, hashtags: selectedTags, mediaFile: selectedFile });
     } else {
-      await createBoard({ userId: 1, content, tags: selectedTags });
+      await createBoard({ content, hashtags: selectedTags, mediaFile: selectedFile });
     }
     setSubmitting(false);
     onSaved?.();
