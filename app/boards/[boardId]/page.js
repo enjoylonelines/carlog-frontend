@@ -19,6 +19,7 @@ function timeAgo(dateStr) {
 }
 
 const MY_USER_ID = 1;
+const MY_USERNAME = 'me';
 
 export default function BoardDetailPage() {
   const { boardId } = useParams();
@@ -50,7 +51,7 @@ export default function BoardDetailPage() {
       getComments(boardId),
     ]).then(([boardData, commentData]) => {
       setBoard(boardData);
-      setComments(Array.isArray(commentData) ? commentData : MOCK_COMMENTS);
+      setComments(Array.isArray(commentData) ? commentData : []);
       setLoading(false);
     });
   }, [boardId]);
@@ -81,7 +82,7 @@ export default function BoardDetailPage() {
     const newEntry = {
       commentId: result.commentId,
       userId: MY_USER_ID,
-      username: '카로그왕',
+      username: MY_USERNAME,
       content: commentText,
       createdAt: new Date().toISOString(),
       replyCount: 0,
@@ -149,7 +150,7 @@ export default function BoardDetailPage() {
       const data = await getReplies(commentId);
       setRepliesCache((prev) => ({
         ...prev,
-        [commentId]: Array.isArray(data) ? data : MOCK_REPLIES,
+        [commentId]: Array.isArray(data) ? data : [],
       }));
       setLoadingReplies((prev) => {
         const next = new Set(prev);
@@ -421,12 +422,3 @@ export default function BoardDetailPage() {
   );
 }
 
-const MOCK_COMMENTS = [
-  { commentId: 1, userId: 2, username: '드라이브매니아', content: '정말 멋진 차네요! 저도 드라이브 가고 싶어지네요 😍', replyCount: 1, createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
-  { commentId: 2, userId: 3, username: '튜닝고수', content: '어디 코스로 다녀오셨나요? 저도 같은 차 타는데 공감 100%입니다 👍', replyCount: 0, createdAt: new Date(Date.now() - 1 * 3600 * 1000).toISOString() },
-  { commentId: 3, userId: 4, username: '연비지존', content: '연비는 어떠세요? 고속주행 시 체감이 궁금합니다.', replyCount: 2, createdAt: new Date(Date.now() - 3 * 3600 * 1000).toISOString() },
-];
-
-const MOCK_REPLIES = [
-  { commentId: 101, userId: 1, username: '카로그왕', content: '감사합니다! 저도 함께 드라이브해요 😄', replyCount: 0, createdAt: new Date(Date.now() - 20 * 60 * 1000).toISOString() },
-];
