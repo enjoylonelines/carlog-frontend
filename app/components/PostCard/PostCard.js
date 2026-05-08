@@ -13,18 +13,22 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('ko-KR');
 }
 
+const AVATAR_COLORS = ['#E03131', '#45B7D1', '#6C5CE7', '#96CEB4', '#FD9644', '#2196F3', '#FF9800'];
+const colorFromId = (id) => AVATAR_COLORS[(id || 0) % AVATAR_COLORS.length];
+
 export default function PostCard({ post }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [following, setFollowing] = useState(false);
 
-  const { boardId, username, avatarColor, content, hitcount, createdAt, tags, imageUrl, commentCount } = post;
+  const { boardId, userId, username, avatarColor, content, hitcount, createdAt, tags, imageUrl, commentCount } = post;
+  const color = avatarColor || colorFromId(userId);
   const isLong = content && content.length > 80;
 
   return (
     <article className={styles.card}>
       <div className={styles.header}>
-        <div className={styles.avatar} style={{ background: avatarColor || '#4ECDC4' }}>
+        <div className={styles.avatar} style={{ background: color }}>
           {(username || 'U')[0].toUpperCase()}
         </div>
         <div className={styles.meta}>
