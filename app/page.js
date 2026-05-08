@@ -103,13 +103,16 @@ export default function FeedPage() {
     searchBoards({ tag: selectedTag }).then((data) => {
       if (cancelled) return;
       if (data && Array.isArray(data) && data.length > 0) {
-        const mapped = data.map((board, i) => ({
-          ...MOCK_POSTS[i % MOCK_POSTS.length],
+        const mapped = data.map((board) => ({
           boardId: board.boardId,
+          userId: board.userId,
+          username: board.username,
           content: board.content,
           hitcount: board.hitcount,
           createdAt: board.createdAt,
           tags: board.tags?.length > 0 ? board.tags : [selectedTag],
+          commentCount: board.commentCount ?? 0,
+          imageUrl: `https://picsum.photos/seed/carlog${board.boardId}/600/450`,
         }));
         dispatch({ type: "success", posts: mapped });
       } else {
