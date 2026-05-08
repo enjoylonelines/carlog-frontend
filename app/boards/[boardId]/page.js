@@ -41,7 +41,7 @@ export default function BoardDetailPage() {
 
   const commentInputRef = useRef(null);
 
-  const imageUrl = `https://picsum.photos/seed/carlog${boardId}/600/450`;
+  const imageUrl = board?.mediaUrls?.[0] || `https://picsum.photos/seed/carlog${boardId}/600/450`;
   const isOwner = board?.userId === MY_USER_ID;
 
   useEffect(() => {
@@ -51,9 +51,10 @@ export default function BoardDetailPage() {
       getComments(boardId),
     ]).then(([boardData, commentData]) => {
       setBoard(boardData);
-      setComments(Array.isArray(commentData) ? commentData : []);
+      setComments(commentData);
       setLoading(false);
     });
+
   }, [boardId]);
 
   const handleDelete = async () => {
@@ -147,7 +148,7 @@ export default function BoardDetailPage() {
     // 아직 로드 안 된 경우 fetch
     if (!repliesCache[commentId]) {
       setLoadingReplies((prev) => new Set([...prev, commentId]));
-      const data = await getReplies(commentId);
+      const data = await getReplies(boardId, commentId);
       setRepliesCache((prev) => ({
         ...prev,
         [commentId]: Array.isArray(data) ? data : [],
@@ -227,7 +228,7 @@ export default function BoardDetailPage() {
             </div>
             <div className={styles.authorMeta}>
               <span className={styles.authorName}>{board.username || `user${board.userId}`}</span>
-              <span className={styles.postTime}>{timeAgo(board.createdAt)}</span>
+              <span className={styles.postTime}>{timeAgo(board.createdDate)}</span>
             </div>
             <button className={styles.followBtn}>팔로우</button>
           </div>
@@ -238,9 +239,9 @@ export default function BoardDetailPage() {
           </div>
 
           {/* 태그 */}
-          {board.tags && board.tags.length > 0 && (
+          {board.hashtags && board.hashtags.length > 0 && (
             <div className={styles.tags}>
-              {board.tags.map((tag) => (
+              {board.hashtags.map((tag) => (
                 <span key={tag} className={styles.tag}>#{tag}</span>
               ))}
             </div>
