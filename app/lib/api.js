@@ -1,11 +1,18 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:80';
 
-async function request(path, options) {
+async function request(path, options = {}) {
   try {
+    const { headers: extraHeaders, body, ...rest } = options;
+    const isFormData = body instanceof FormData;
+    const headers = isFormData
+      ? { ...extraHeaders }
+      : { 'Content-Type': 'application/json', ...extraHeaders };
+
     const res = await fetch(`${BASE_URL}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
-      ...options,
+      ...rest,
+      ...(body !== undefined ? { body } : {}),
+      headers,
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
@@ -19,12 +26,8 @@ async function request(path, options) {
 export const getHashtags = (name = '') =>
   request(`/api/hashtags${name ? `?name=${encodeURIComponent(name)}` : ''}`);
 
-export const searchBoards = ({ tag, keyword } = {}) => {
-  const params = new URLSearchParams();
-  if (tag) params.set('tag', tag);
-  if (keyword) params.set('keyword', keyword);
-  return request(`/api/boards/search?${params}`);
-};
+export const searchBoards = ({ pageNo = 1 } = {}) =>
+  request(`/api/boards/list?pageNo=${pageNo}`);
 
 export const searchUsers = (keyword) =>
   request(`/api/users/search?keyword=${encodeURIComponent(keyword)}`);
@@ -39,34 +42,40 @@ export const getFollowings = (userId) =>
   request(`/api/follows/followings/${userId}`);
 
 export const getBoard = (boardId) =>
-  request(`/api/boards/${boardId}`);
+  request(`/api/boards/read/${boardId}`);
 
-export const createBoard = ({ userId, content, tags = [] }) =>
-  request('/api/boards', {
-    method: 'POST',
-    body: JSON.stringify({ userId, content, tags }),
-  });
+export const createBoard = ({ userId = 1, content, hashtags = [], mediaFile = null }) => {
+  const form = new FormData();
+  form.append('userId', userId);
+  form.append('content', content);
+  hashtags.forEach((tag) => form.append('hashtags', tag));
+  if (mediaFile) form.append('mediaFiles', mediaFile);
+  return request('/api/boards/create', { method: 'POST', body: form });
+};
 
-export const updateBoard = ({ boardId, content, tags = [] }) =>
-  request(`/api/boards/${boardId}`, {
-    method: 'PUT',
-    body: JSON.stringify({ content, tags }),
-  });
+export const updateBoard = ({ boardId, content, hashtags = [], mediaFile = null }) => {
+  const form = new FormData();
+  form.append('boardId', boardId);
+  form.append('content', content);
+  hashtags.forEach((tag) => form.append('hashtags', tag));
+  if (mediaFile) form.append('mediaFiles', mediaFile);
+  return request('/api/boards/update', { method: 'PUT', body: form });
+};
 
 export const deleteBoard = (boardId) =>
-  request(`/api/boards/${boardId}`, { method: 'DELETE' });
+  request(`/api/boards/delete/${boardId}`, { method: 'DELETE' });
 
 export const getComments = (boardId) =>
-  request(`/api/comments?boardId=${boardId}`);
+  request(`/api/comments?boardId=${boardId}`).then((data) => data?.comments ?? []);
 
-export const createComment = ({ boardId, userId, content, parentCommentId = null }) =>
+export const createComment = ({ boardId, content, parentCommentId = null }) =>
   request('/api/comments', {
     method: 'POST',
-    body: JSON.stringify({ boardId, userId, content, parentCommentId }),
+    body: JSON.stringify({ boardId, content, parentCommentId }),
   });
 
 export const deleteComment = (commentId) =>
   request(`/api/comments/${commentId}`, { method: 'DELETE' });
 
-export const getReplies = (parentCommentId) =>
-  request(`/api/comments/${parentCommentId}/replies`);
+export const getReplies = (boardId, parentCommentId) =>
+  request(`/api/comments?boardId=${boardId}&parentCommentId=${parentCommentId}`).then((data) => data?.comments ?? []);
