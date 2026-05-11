@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import HashtagBar from '../HashtagBar/HashtagBar';
-import { getHashtags } from '../../lib/api';
+import { getHashtags } from '../../../api';
 import styles from './ExploreGrid.module.css';
 
 const TAGS = ['BMW', 'SUV', '포르쉐', '튜닝', '전기차', '람보르기니'];
