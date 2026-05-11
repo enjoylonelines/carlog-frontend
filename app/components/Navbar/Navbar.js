@@ -1,12 +1,14 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import styles from './Navbar.module.css';
-import { searchUsers } from '../../lib/api';
+import { searchUsers } from '../../../api';
 
 const AVATAR_COLORS = ['#4ECDC4', '#45B7D1', '#96CEB4', '#6C5CE7', '#FD9644', '#DDA0DD'];
 
 export default function Navbar() {
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [showDrop, setShowDrop] = useState(false);
@@ -47,7 +49,15 @@ export default function Navbar() {
           {showDrop && results.length > 0 && (
             <div className={styles.dropdown}>
               {results.map((user, i) => (
-                <Link key={user.userId || i} href={`/users/${user.userId}`} className={styles.dropItem}>
+                <button
+                  key={user.userId || i}
+                  className={styles.dropItem}
+                  onClick={() => {
+                    setShowDrop(false);
+                    setQuery('');
+                    router.push(`/?keyword=${encodeURIComponent(user.username)}`);
+                  }}
+                >
                   <div
                     className={styles.dropAvatar}
                     style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}
@@ -58,7 +68,7 @@ export default function Navbar() {
                     <span className={styles.dropName}>{user.username}</span>
                     {user.bio && <span className={styles.dropBio}>{user.bio}</span>}
                   </div>
-                </Link>
+                </button>
               ))}
             </div>
           )}
