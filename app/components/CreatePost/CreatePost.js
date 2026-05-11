@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { getHashtags, createBoard, updateBoard } from '../../lib/api';
+import boardApi from '@/apis/boardApi';
+import { getHashtags } from '../../lib/api';
 import styles from './CreatePost.module.css';
 
 const DEFAULT_TAGS = ['드라이브', '튜닝', '연비', '차박', '정비', 'BMW', '현대', '포르쉐'];
@@ -19,7 +20,8 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
   const [selectedTags, setSelectedTags] = useState(initialPost?.hashtags ?? []);
   const [hashtags, setHashtags] = useState([]);
   const [preview, setPreview] = useState(initialPost?.imageUrl ?? null);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [mediaFiles, setMediaFiles] = useState([]);
+  const [tagInput, setTagInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef(null);
 
@@ -32,10 +34,10 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
   const tagOptions = hashtags.length > 0 ? hashtags.map((h) => h.tagName) : DEFAULT_TAGS;
 
   const handleFile = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setSelectedFile(file);
-    setPreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setMediaFiles(files);
+    setPreview(URL.createObjectURL(files[0]));
   };
 
   const toggleTag = (tag) => {
@@ -44,17 +46,43 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
     );
   };
 
+  const addCustomTag = () => {
+    const tag = tagInput.trim().replace(/^#+/, '');
+    if (!tag) return;
+
+    setSelectedTags((prev) => (
+      prev.includes(tag) ? prev : [...prev, tag]
+    ));
+    setTagInput('');
+  };
+
   const handleSubmit = async () => {
     if (!content.trim() || submitting) return;
     setSubmitting(true);
-    if (isEdit) {
-      await updateBoard({ boardId: initialPost.boardId, content, hashtags: selectedTags, mediaFile: selectedFile });
-    } else {
-      await createBoard({ content, hashtags: selectedTags, mediaFile: selectedFile });
+
+    try {
+      if (isEdit) {
+        const formData = new FormData();
+        formData.append('boardId', initialPost.boardId);
+        formData.append('content', content);
+        selectedTags.forEach((tag) => formData.append('hashtags', tag));
+        mediaFiles.forEach((file) => formData.append('mediaFiles', file));
+
+        await boardApi.boardUpdate(formData);
+      } else {
+        const formData = new FormData();
+        formData.append('content', content);
+        selectedTags.forEach((tag) => formData.append('hashtags', tag));
+        mediaFiles.forEach((file) => formData.append('mediaFiles', file));
+
+        await boardApi.boardWrite(formData);
+      }
+
+      onSaved?.();
+      onClose();
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
-    onSaved?.();
-    onClose();
   };
 
   const canPost = content.trim().length > 0;
@@ -90,6 +118,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
               ref={fileRef}
               type="file"
               accept="image/*"
+              multiple
               className={styles.fileInput}
               onChange={handleFile}
             />
@@ -114,6 +143,40 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
 
           <div className={styles.tagSection}>
             <span className={styles.tagLabel}>해시태그</span>
+            <div className={styles.tagInputRow}>
+              <span className={styles.hashMark}>#</span>
+              <input
+                className={styles.tagInput}
+                type="text"
+                placeholder="직접 입력"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCustomTag();
+                  }
+                }}
+              />
+              <button className={styles.tagAddBtn} onClick={addCustomTag} type="button">
+                추가
+              </button>
+            </div>
+            {selectedTags.length > 0 && (
+              <div className={styles.selectedTags}>
+                {selectedTags.map((tag) => (
+                  <button
+                    key={tag}
+                    className={styles.selectedTag}
+                    onClick={() => toggleTag(tag)}
+                    type="button"
+                  >
+                    #{tag}
+                    <span aria-hidden="true">×</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className={styles.tagChips}>
               {tagOptions.map((tag) => (
                 <button
