@@ -21,6 +21,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
   const [hashtags, setHashtags] = useState([]);
   const [preview, setPreview] = useState(initialPost?.imageUrl ?? null);
   const [mediaFiles, setMediaFiles] = useState([]);
+  const [tagInput, setTagInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef(null);
 
@@ -43,6 +44,16 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
+  };
+
+  const addCustomTag = () => {
+    const tag = tagInput.trim().replace(/^#+/, '');
+    if (!tag) return;
+
+    setSelectedTags((prev) => (
+      prev.includes(tag) ? prev : [...prev, tag]
+    ));
+    setTagInput('');
   };
 
   const handleSubmit = async () => {
@@ -126,6 +137,40 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
 
           <div className={styles.tagSection}>
             <span className={styles.tagLabel}>해시태그</span>
+            <div className={styles.tagInputRow}>
+              <span className={styles.hashMark}>#</span>
+              <input
+                className={styles.tagInput}
+                type="text"
+                placeholder="직접 입력"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCustomTag();
+                  }
+                }}
+              />
+              <button className={styles.tagAddBtn} onClick={addCustomTag} type="button">
+                추가
+              </button>
+            </div>
+            {selectedTags.length > 0 && (
+              <div className={styles.selectedTags}>
+                {selectedTags.map((tag) => (
+                  <button
+                    key={tag}
+                    className={styles.selectedTag}
+                    onClick={() => toggleTag(tag)}
+                    type="button"
+                  >
+                    #{tag}
+                    <span aria-hidden="true">×</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className={styles.tagChips}>
               {tagOptions.map((tag) => (
                 <button
