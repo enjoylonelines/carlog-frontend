@@ -2,11 +2,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import CreatePost from '../../components/CreatePost/CreatePost';
-import { getBoard, deleteBoard, getComments, createComment, deleteComment, getReplies } from '../../lib/api';
+import boardApi from '@/apis/boardApi';
+import { getComments, createComment, deleteComment, getReplies } from '../../lib/api';
 import styles from './page.module.css';
 
 const AVATAR_COLORS = ['#E03131', '#45B7D1', '#6C5CE7', '#96CEB4', '#FD9644', '#2196F3', '#FF9800'];
 const avatarColor = (userId) => AVATAR_COLORS[(userId || 0) % AVATAR_COLORS.length];
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
+
+const mediaUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_ORIGIN}${url}`;
+};
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
@@ -40,13 +48,13 @@ export default function BoardDetailPage() {
 
   const commentInputRef = useRef(null);
 
-  const imageUrl = `https://picsum.photos/seed/carlog${boardId}/600/450`;
+  const mediaUrls = board?.mediaUrls || [];
+  const firstImageUrl = mediaUrls.length > 0 ? mediaUrl(mediaUrls[0]) : null;
   const isOwner = board?.userId === MY_USER_ID;
 
   useEffect(() => {
-    setLoading(true);
     Promise.all([
-      getBoard(boardId),
+      boardApi.boardRead(boardId).then((response) => response.data),
       getComments(boardId),
     ]).then(([boardData, commentData]) => {
       setBoard(boardData);
@@ -56,7 +64,7 @@ export default function BoardDetailPage() {
   }, [boardId]);
 
   const handleDelete = async () => {
-    await deleteBoard(boardId);
+    await boardApi.boardDelete(boardId);
     router.back();
   };
 
@@ -226,20 +234,26 @@ export default function BoardDetailPage() {
             </div>
             <div className={styles.authorMeta}>
               <span className={styles.authorName}>{board.username || `user${board.userId}`}</span>
-              <span className={styles.postTime}>{timeAgo(board.createdAt)}</span>
+              <span className={styles.postTime}>{timeAgo(board.createdDate)}</span>
             </div>
             <button className={styles.followBtn}>팔로우</button>
           </div>
 
           {/* 이미지 */}
-          <div className={styles.imageWrap}>
-            <img src={imageUrl} alt="게시물 이미지" className={styles.image} />
-          </div>
+          {mediaUrls.length > 0 && (
+            <div className={styles.mediaList}>
+              {mediaUrls.map((url, index) => (
+                <div className={styles.imageWrap} key={`${url}-${index}`}>
+                  <img src={mediaUrl(url)} alt={`게시물 이미지 ${index + 1}`} className={styles.image} />
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* 태그 */}
-          {board.tags && board.tags.length > 0 && (
+          {board.hashtags && board.hashtags.length > 0 && (
             <div className={styles.tags}>
-              {board.tags.map((tag) => (
+              {board.hashtags.map((tag) => (
                 <span key={tag} className={styles.tag}>#{tag}</span>
               ))}
             </div>
@@ -397,10 +411,12 @@ export default function BoardDetailPage() {
       {/* 수정 시트 */}
       {showEdit && (
         <CreatePost
-          initialPost={{ ...board, imageUrl }}
+          initialPost={{ ...board, tags: board.hashtags || [], imageUrl: firstImageUrl }}
           onClose={() => setShowEdit(false)}
           onSaved={() => {
-            getBoard(boardId).then((data) => { if (data) setBoard(data); });
+            boardApi.boardRead(boardId).then((response) => {
+              if (response.data) setBoard(response.data);
+            });
           }}
         />
       )}
