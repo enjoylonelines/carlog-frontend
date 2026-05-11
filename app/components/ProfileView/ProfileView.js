@@ -1,22 +1,20 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { getUserProfile } from '../../lib/api';
+import { useRouter } from 'next/navigation';
+import { getUserProfile, searchBoards } from '../../../api';
 import styles from './ProfileView.module.css';
 
+const MY_USER_ID = 1;
+
 const MOCK_PROFILE = {
-  userId: 1,
+  userId: MY_USER_ID,
   username: '카로그왕',
   bio: '차를 사랑하는 사람입니다. 주말마다 드라이브 🚗\n자동차 관련 정보 공유해요!',
   avatarColor: '#E03131',
-  followerCount: 248,
-  followingCount: 132,
-  boardCount: 18,
+  followerCount: 0,
+  followingCount: 0,
+  boardCount: 0,
 };
-
-const MOCK_POSTS = Array.from({ length: 12 }, (_, i) => ({
-  id: i + 1,
-  imageUrl: `https://picsum.photos/seed/profile${i + 1}/400/400`,
-}));
 
 const GridIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
@@ -25,19 +23,18 @@ const GridIcon = () => (
   </svg>
 );
 
-const HeartIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-  </svg>
-);
-
 export default function ProfileView() {
+  const router = useRouter();
   const [profile, setProfile] = useState(MOCK_PROFILE);
-  const [tab, setTab] = useState('posts');
+  const [posts, setPosts] = useState([]);
 
   useEffect(() => {
-    getUserProfile(1).then((data) => {
+    getUserProfile(MY_USER_ID).then((data) => {
       if (data && data.username) setProfile((prev) => ({ ...prev, ...data }));
+    });
+    searchBoards({ userId: MY_USER_ID }).then((data) => {
+      const boards = data?.boards;
+      if (boards && Array.isArray(boards)) setPosts(boards);
     });
   }, []);
 
@@ -51,15 +48,15 @@ export default function ProfileView() {
           <div className={styles.username}>{profile.username}</div>
           <div className={styles.stats}>
             <div className={styles.stat}>
-              <span className={styles.statNum}>{profile.boardCount}</span>
+              <span className={styles.statNum}>{profile.boardCount || posts.length}</span>
               <span className={styles.statLabel}>게시물</span>
             </div>
-            <button className={styles.stat}>
-              <span className={styles.statNum}>{profile.followerCount.toLocaleString()}</span>
+            <button className={styles.stat} onClick={() => router.push('/profile/follow?tab=followers')}>
+              <span className={styles.statNum}>{(profile.followerCount ?? 0).toLocaleString()}</span>
               <span className={styles.statLabel}>팔로워</span>
             </button>
-            <button className={styles.stat}>
-              <span className={styles.statNum}>{profile.followingCount.toLocaleString()}</span>
+            <button className={styles.stat} onClick={() => router.push('/profile/follow?tab=followings')}>
+              <span className={styles.statNum}>{(profile.followingCount ?? 0).toLocaleString()}</span>
               <span className={styles.statLabel}>팔로잉</span>
             </button>
           </div>
@@ -80,32 +77,32 @@ export default function ProfileView() {
       </div>
 
       <div className={styles.tabBar}>
-        <button
-          className={`${styles.tabBtn} ${tab === 'posts' ? styles.tabActive : ''}`}
-          onClick={() => setTab('posts')}
-        >
+        <button className={`${styles.tabBtn} ${styles.tabActive}`}>
           <GridIcon />
-        </button>
-        <button
-          className={`${styles.tabBtn} ${tab === 'liked' ? styles.tabActive : ''}`}
-          onClick={() => setTab('liked')}
-        >
-          <HeartIcon />
         </button>
       </div>
 
-      <div className={styles.grid}>
-        {(tab === 'posts' ? MOCK_POSTS : MOCK_POSTS.slice(0, 6)).map((post) => (
-          <button key={post.id} className={styles.cell}>
-            <img
-              src={post.imageUrl}
-              alt=""
-              className={styles.img}
-              loading="lazy"
-            />
-          </button>
-        ))}
-      </div>
+      {posts.length === 0 ? (
+        <p className={styles.empty}>아직 게시물이 없어요.</p>
+      ) : (
+        <div className={styles.grid}>
+          {posts.map((post) => (
+            <button
+              key={post.boardId}
+              className={styles.cell}
+              onClick={() => router.push(`/boards/${post.boardId}`)}
+            >
+              {post.mediaUrls?.[0] ? (
+                <img src={post.mediaUrls[0]} alt="" className={styles.img} loading="lazy" />
+              ) : (
+                <div className={styles.textCell}>
+                  <p>{post.content}</p>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
