@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { getHashtags, createBoard, updateBoard } from '../../lib/api';
+import { getHashtags, createBoard, updateBoard } from '../../../api';
 import styles from './CreatePost.module.css';
 
 const DEFAULT_TAGS = ['드라이브', '튜닝', '연비', '차박', '정비', 'BMW', '현대', '포르쉐'];
