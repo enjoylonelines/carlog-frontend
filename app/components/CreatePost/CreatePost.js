@@ -17,7 +17,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
   const isEdit = !!initialPost;
 
   const [content, setContent] = useState(initialPost?.content ?? '');
-  const [selectedTags, setSelectedTags] = useState(initialPost?.tags ?? []);
+  const [selectedTags, setSelectedTags] = useState(initialPost?.hashtags ?? []);
   const [hashtags, setHashtags] = useState([]);
   const [preview, setPreview] = useState(initialPost?.imageUrl ?? null);
   const [mediaFiles, setMediaFiles] = useState([]);

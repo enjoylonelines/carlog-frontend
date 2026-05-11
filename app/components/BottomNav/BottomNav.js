@@ -69,8 +69,10 @@ export default function BottomNav({ onCreateClick }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, [pathname]);
 
+  const isDetailPage = pathname.startsWith('/boards/');
+
   return (
-    <nav className={`${styles.nav} ${scrollHidden ? styles.hidden : ''}`}>
+    <nav className={`${styles.nav} ${scrollHidden || isDetailPage ? styles.hidden : ''}`}>
       <div className={styles.inner}>
         {NAV_ITEMS.map((item) => {
           if (item.id === 'create') {

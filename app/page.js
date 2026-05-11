@@ -83,10 +83,7 @@ export default function FeedPage() {
     { loading: false, apiPosts: null }
   );
 
-  const posts =
-    selectedTag === null || fetchState.apiPosts === null
-      ? MOCK_POSTS
-      : fetchState.apiPosts;
+  const posts = fetchState.apiPosts === null ? MOCK_POSTS : fetchState.apiPosts;
 
   useEffect(() => {
     getHashtags().then((data) => {
@@ -95,21 +92,23 @@ export default function FeedPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedTag === null) return;
-
     let cancelled = false;
     dispatch({ type: "loading" });
 
-    searchBoards({ tag: selectedTag }).then((data) => {
+    searchBoards().then((data) => {
       if (cancelled) return;
-      if (data && Array.isArray(data) && data.length > 0) {
-        const mapped = data.map((board, i) => ({
-          ...MOCK_POSTS[i % MOCK_POSTS.length],
+      const boards = data?.boards;
+      if (boards && Array.isArray(boards) && boards.length > 0) {
+        const mapped = boards.map((board) => ({
           boardId: board.boardId,
-          content: board.content,
+          userId: board.userId,
+          username: `user${board.userId}`,
+          content: board.content || '',
           hitcount: board.hitcount,
-          createdAt: board.createdAt,
-          tags: board.tags?.length > 0 ? board.tags : [selectedTag],
+          createdAt: board.createdDate,
+          tags: [],
+          commentCount: 0,
+          imageUrl: board.mediaUrls?.[0] || `https://picsum.photos/seed/carlog${board.boardId}/600/450`,
         }));
         dispatch({ type: "success", posts: mapped });
       } else {
