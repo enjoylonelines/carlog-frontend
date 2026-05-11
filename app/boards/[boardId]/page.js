@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import CreatePost from '../../components/CreatePost/CreatePost';
-import { getBoard, deleteBoard, getComments, createComment, deleteComment, getReplies } from '../../lib/api';
+import { getBoard, deleteBoard, getComments, createComment, deleteComment, getReplies } from '../../../api';
 import styles from './page.module.css';
 
 const AVATAR_COLORS = ['#E03131', '#45B7D1', '#6C5CE7', '#96CEB4', '#FD9644', '#2196F3', '#FF9800'];
