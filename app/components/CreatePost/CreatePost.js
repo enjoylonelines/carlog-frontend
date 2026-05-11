@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { getHashtags, createBoard, updateBoard } from '../../lib/api';
+import boardApi from '@/apis/boardApi';
+import { getHashtags, updateBoard } from '../../lib/api';
 import styles from './CreatePost.module.css';
 
 const DEFAULT_TAGS = ['드라이브', '튜닝', '연비', '차박', '정비', 'BMW', '현대', '포르쉐'];
@@ -19,6 +20,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
   const [selectedTags, setSelectedTags] = useState(initialPost?.tags ?? []);
   const [hashtags, setHashtags] = useState([]);
   const [preview, setPreview] = useState(initialPost?.imageUrl ?? null);
+  const [mediaFiles, setMediaFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef(null);
 
@@ -31,9 +33,10 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
   const tagOptions = hashtags.length > 0 ? hashtags.map((h) => h.tagName) : DEFAULT_TAGS;
 
   const handleFile = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setPreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setMediaFiles(files);
+    setPreview(URL.createObjectURL(files[0]));
   };
 
   const toggleTag = (tag) => {
@@ -45,14 +48,24 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
   const handleSubmit = async () => {
     if (!content.trim() || submitting) return;
     setSubmitting(true);
-    if (isEdit) {
-      await updateBoard({ boardId: initialPost.boardId, content, tags: selectedTags });
-    } else {
-      await createBoard({ userId: 1, content, tags: selectedTags });
+
+    try {
+      if (isEdit) {
+        await updateBoard({ boardId: initialPost.boardId, content, tags: selectedTags });
+      } else {
+        const formData = new FormData();
+        formData.append('content', content);
+        selectedTags.forEach((tag) => formData.append('hashtags', tag));
+        mediaFiles.forEach((file) => formData.append('mediaFiles', file));
+
+        await boardApi.boardWrite(formData);
+      }
+
+      onSaved?.();
+      onClose();
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
-    onSaved?.();
-    onClose();
   };
 
   const canPost = content.trim().length > 0;
@@ -88,6 +101,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
               ref={fileRef}
               type="file"
               accept="image/*"
+              multiple
               className={styles.fileInput}
               onChange={handleFile}
             />
