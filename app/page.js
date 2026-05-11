@@ -71,6 +71,7 @@ const MOCK_POSTS = [
 export default function FeedPage() {
   const [hashtags, setHashtags] = useState([]);
   const [selectedTag, setSelectedTag] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [fetchState, dispatch] = useReducer(
     (state, action) => {
       switch (action.type) {
@@ -89,6 +90,12 @@ export default function FeedPage() {
     getHashtags().then((data) => {
       if (data && Array.isArray(data)) setHashtags(data);
     });
+  }, []);
+
+  useEffect(() => {
+    const reloadBoards = () => setReloadKey((key) => key + 1);
+    window.addEventListener('carlog:board-saved', reloadBoards);
+    return () => window.removeEventListener('carlog:board-saved', reloadBoards);
   }, []);
 
   useEffect(() => {
@@ -117,7 +124,7 @@ export default function FeedPage() {
     });
 
     return () => { cancelled = true; };
-  }, [selectedTag]);
+  }, [selectedTag, reloadKey]);
 
   return (
     <>
