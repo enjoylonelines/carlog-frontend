@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './PostCard.module.css';
 
+const MY_USER_ID = 1;
+
 function timeAgo(dateStr) {
   if (!dateStr) return '';
   const diff = (Date.now() - new Date(dateStr)) / 1000;
@@ -28,10 +30,23 @@ export default function PostCard({ post }) {
   return (
     <article className={styles.card}>
       <div className={styles.header}>
-        <div className={styles.avatar} style={{ background: color }}>
+        <div
+          className={styles.avatar}
+          style={{ background: color }}
+          onClick={() => router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
+        >
           {(username || 'U')[0].toUpperCase()}
         </div>
-        <div className={styles.meta}>
+        <div
+          className={styles.meta}
+          onClick={() => router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
+        >
           <span className={styles.username}>{username || '알 수 없음'}</span>
           <span className={styles.time}>{timeAgo(createdAt)}</span>
         </div>

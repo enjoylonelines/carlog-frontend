@@ -29,6 +29,12 @@
   font-weight: 700;
   color: white;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.avatar:hover {
+  opacity: 0.85;
 }
 
 .meta {
@@ -37,6 +43,11 @@
   flex-direction: column;
   gap: 1px;
   min-width: 0;
+  cursor: pointer;
+}
+
+.meta:hover .username {
+  text-decoration: underline;
 }
 
 .username {
