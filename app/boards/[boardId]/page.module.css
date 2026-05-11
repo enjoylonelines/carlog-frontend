@@ -137,15 +137,25 @@
 /* 이미지 */
 .mediaList {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mediaList::-webkit-scrollbar {
+  display: none;
 }
 
 .imageWrap {
+  flex: 0 0 100%;
   width: 100%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   background: #F0F0F0;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
 }
 
 .image {

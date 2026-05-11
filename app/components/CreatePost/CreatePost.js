@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import boardApi from '@/apis/boardApi';
-import { getHashtags, updateBoard } from '../../lib/api';
+import { getHashtags } from '../../lib/api';
 import styles from './CreatePost.module.css';
 
 const DEFAULT_TAGS = ['드라이브', '튜닝', '연비', '차박', '정비', 'BMW', '현대', '포르쉐'];
@@ -62,7 +62,13 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
 
     try {
       if (isEdit) {
-        await updateBoard({ boardId: initialPost.boardId, content, tags: selectedTags });
+        const formData = new FormData();
+        formData.append('boardId', initialPost.boardId);
+        formData.append('content', content);
+        selectedTags.forEach((tag) => formData.append('hashtags', tag));
+        mediaFiles.forEach((file) => formData.append('mediaFiles', file));
+
+        await boardApi.boardUpdate(formData);
       } else {
         const formData = new FormData();
         formData.append('content', content);
