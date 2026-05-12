@@ -82,12 +82,67 @@
   cursor: pointer;
 }
 
+.mediaFrame {
+  position: relative;
+}
+
+.mediaList {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mediaList::-webkit-scrollbar {
+  display: none;
+}
+
 .imageWrap {
+  flex: 0 0 100%;
   width: 100%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   background: #F0F0F0;
   position: relative;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+.mediaArrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.38);
+  color: #FFFFFF;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.mediaArrow:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.58);
+}
+
+.mediaArrow:disabled {
+  cursor: default;
+  opacity: 0.28;
+}
+
+.mediaArrowPrev {
+  left: 10px;
+}
+
+.mediaArrowNext {
+  right: 10px;
 }
 
 .image {
@@ -129,6 +184,7 @@
   font-size: 14px;
   color: var(--color-text);
   line-height: 1.65;
+  white-space: pre-wrap;
   word-break: keep-all;
   margin-bottom: 10px;
 }

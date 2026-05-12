@@ -71,6 +71,7 @@ const MOCK_POSTS = [
 export default function FeedPage() {
   const [hashtags, setHashtags] = useState([]);
   const [selectedTag, setSelectedTag] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [fetchState, dispatch] = useReducer(
     (state, action) => {
       switch (action.type) {
@@ -92,6 +93,12 @@ export default function FeedPage() {
   }, []);
 
   useEffect(() => {
+    const reloadBoards = () => setReloadKey((key) => key + 1);
+    window.addEventListener('carlog:board-saved', reloadBoards);
+    return () => window.removeEventListener('carlog:board-saved', reloadBoards);
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     dispatch({ type: "loading" });
 
@@ -108,6 +115,7 @@ export default function FeedPage() {
           createdAt: board.createdDate,
           tags: [],
           commentCount: 0,
+          mediaUrls: board.mediaUrls || [],
           imageUrl: board.mediaUrls?.[0] || `https://picsum.photos/seed/carlog${board.boardId}/600/450`,
         }));
         dispatch({ type: "success", posts: mapped });
@@ -117,7 +125,7 @@ export default function FeedPage() {
     });
 
     return () => { cancelled = true; };
-  }, [selectedTag]);
+  }, [selectedTag, reloadKey]);
 
   return (
     <>

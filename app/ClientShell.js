@@ -8,12 +8,24 @@ import styles from './ClientShell.module.css';
 
 export default function ClientShell({ children }) {
   const [showCreate, setShowCreate] = useState(false);
+
+  const handleCreateSaved = () => {
+    window.dispatchEvent(new Event('carlog:board-saved'));
+  };
+
   return (
     <AuthContextProvider>
       <Navbar />
       <main className={styles.main}>{children}</main>
       <BottomNav onCreateClick={() => setShowCreate(true)} />
-      {showCreate && <CreatePost onClose={() => setShowCreate(false)} />}
-    </AuthContextProvider>
+
+        
+      {showCreate && (
+        <CreatePost
+          onClose={() => setShowCreate(false)}
+          onSaved={handleCreateSaved}
+        />
+      )}
+    </>
   );
 }
