@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './PostCard.module.css';
+import { checkFollow, followUser, unfollowUser } from '../../../api';
 
 const MY_USER_ID = 1;
 
@@ -15,30 +16,62 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('ko-KR');
 }
 
-const AVATAR_COLORS = ['#E03131', '#45B7D1', '#6C5CE7', '#96CEB4', '#FD9644', '#2196F3', '#FF9800'];
-const colorFromId = (id) => AVATAR_COLORS[(id || 0) % AVATAR_COLORS.length];
+import { avatarColor as getAvatarColor } from '../../utils/avatar';
+import { followCache } from '../../utils/followCache';
 
 export default function PostCard({ post }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
-  const [following, setFollowing] = useState(false);
 
-  const { boardId, userId, username, avatarColor, content, hitcount, createdAt, tags, imageUrl, commentCount } = post;
-  const color = avatarColor || colorFromId(userId);
+  const { boardId, userId, username, avatarColor, profileImageUrl, content, hitcount, createdAt, tags, imageUrl, commentCount } = post;
+  const color = avatarColor || getAvatarColor(userId);
   const isLong = content && content.length > 80;
+  const isOwnPost = userId === MY_USER_ID;
+
+  // null = 로딩 중, true/false = 확정
+  const [following, setFollowing] = useState(() => followCache[userId] ?? null);
+
+  useEffect(() => {
+    if (isOwnPost) return;
+    if (followCache[userId] !== undefined) return;
+    let cancelled = false;
+    checkFollow({ userId: MY_USER_ID, targetId: userId }).then(isFollowing => {
+      if (!cancelled) {
+        followCache[userId] = isFollowing;
+        setFollowing(isFollowing);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [userId, isOwnPost]);
+
+  const handleFollow = async () => {
+    const next = !following;
+    setFollowing(next);
+    followCache[userId] = next;
+    if (next) {
+      await followUser({ userId: MY_USER_ID, targetId: userId });
+    } else {
+      await unfollowUser({ userId: MY_USER_ID, targetId: userId });
+    }
+  };
 
   return (
     <article className={styles.card}>
       <div className={styles.header}>
         <div
-          className={styles.avatar}
-          style={{ background: color }}
+          className={styles.avatarWrap}
           onClick={() => router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => e.key === 'Enter' && router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
         >
-          {(username || 'U')[0].toUpperCase()}
+          {profileImageUrl ? (
+            <img src={profileImageUrl} alt={username} className={styles.avatarImg} />
+          ) : (
+            <div className={styles.avatar} style={{ background: color }}>
+              {(username || 'U')[0].toUpperCase()}
+            </div>
+          )}
         </div>
         <div
           className={styles.meta}
@@ -50,12 +83,14 @@ export default function PostCard({ post }) {
           <span className={styles.username}>{username || '알 수 없음'}</span>
           <span className={styles.time}>{timeAgo(createdAt)}</span>
         </div>
-        <button
-          className={`${styles.followBtn} ${following ? styles.following : ''}`}
-          onClick={() => setFollowing(f => !f)}
-        >
-          {following ? '팔로잉' : '팔로우'}
-        </button>
+        {!isOwnPost && following !== null && (
+          <button
+            className={`${styles.followBtn} ${following ? styles.following : ''}`}
+            onClick={handleFollow}
+          >
+            {following ? '팔로잉' : '팔로우'}
+          </button>
+        )}
       </div>
 
       <div
@@ -72,6 +107,7 @@ export default function PostCard({ post }) {
             alt={`${username}의 게시물`}
             className={styles.image}
             loading="lazy"
+            onError={(e) => { e.currentTarget.src = '/no-image.svg'; }}
           />
         </div>
       )}
