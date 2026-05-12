@@ -40,6 +40,7 @@ export default function BoardDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
 
   // 대댓글 상태
   const [replyingTo, setReplyingTo] = useState(null); // { commentId, username }
@@ -48,6 +49,7 @@ export default function BoardDetailPage() {
   const [loadingReplies, setLoadingReplies] = useState(new Set());
 
   const commentInputRef = useRef(null);
+  const mediaListRef = useRef(null);
 
   const mediaUrls = board?.mediaUrls || [];
   const firstImageUrl = mediaUrls.length > 0 ? mediaUrl(mediaUrls[0]) : null;
@@ -60,10 +62,36 @@ export default function BoardDetailPage() {
     ]).then(([boardData, commentData]) => {
       setBoard(boardData);
       setComments(commentData);
+      setCurrentMediaIndex(0);
       setLoading(false);
     });
 
   }, [boardId]);
+
+  useEffect(() => {
+    mediaListRef.current?.scrollTo({ left: 0 });
+  }, [boardId, mediaUrls.length]);
+
+  const handleMediaScroll = () => {
+    const list = mediaListRef.current;
+    if (!list) return;
+    const nextIndex = Math.round(list.scrollLeft / list.clientWidth);
+    setCurrentMediaIndex(Math.min(Math.max(nextIndex, 0), mediaUrls.length - 1));
+  };
+
+  const moveMedia = (direction) => {
+    const list = mediaListRef.current;
+    if (!list) return;
+    const nextIndex = Math.min(
+      Math.max(currentMediaIndex + direction, 0),
+      mediaUrls.length - 1
+    );
+    list.scrollTo({
+      left: nextIndex * list.clientWidth,
+      behavior: 'smooth',
+    });
+    setCurrentMediaIndex(nextIndex);
+  };
 
   const handleDelete = async () => {
     await boardApi.boardDelete(boardId);
@@ -243,12 +271,40 @@ export default function BoardDetailPage() {
 
           {/* 이미지 */}
           {mediaUrls.length > 0 && (
-            <div className={styles.mediaList}>
-              {mediaUrls.map((url, index) => (
-                <div className={styles.imageWrap} key={`${url}-${index}`}>
-                  <img src={mediaUrl(url)} alt={`게시물 이미지 ${index + 1}`} className={styles.image} />
-                </div>
-              ))}
+            <div className={styles.mediaFrame}>
+              <div className={styles.mediaList} ref={mediaListRef} onScroll={handleMediaScroll}>
+                {mediaUrls.map((url, index) => (
+                  <div className={styles.imageWrap} key={`${url}-${index}`}>
+                    <img src={mediaUrl(url)} alt={`게시물 이미지 ${index + 1}`} className={styles.image} />
+                  </div>
+                ))}
+              </div>
+              {mediaUrls.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className={`${styles.mediaArrow} ${styles.mediaArrowPrev}`}
+                    onClick={() => moveMedia(-1)}
+                    disabled={currentMediaIndex === 0}
+                    aria-label="Previous image"
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.mediaArrow} ${styles.mediaArrowNext}`}
+                    onClick={() => moveMedia(1)}
+                    disabled={currentMediaIndex === mediaUrls.length - 1}
+                    aria-label="Next image"
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                </>
+              )}
             </div>
           )}
 

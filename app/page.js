@@ -115,6 +115,7 @@ export default function FeedPage() {
           createdAt: board.createdDate,
           tags: [],
           commentCount: 0,
+          mediaUrls: board.mediaUrls || [],
           imageUrl: board.mediaUrls?.[0] || `https://picsum.photos/seed/carlog${board.boardId}/600/450`,
         }));
         dispatch({ type: "success", posts: mapped });
