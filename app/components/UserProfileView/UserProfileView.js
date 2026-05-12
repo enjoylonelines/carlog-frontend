@@ -3,33 +3,36 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getUserProfile, checkFollow, followUser, unfollowUser } from '../../../api';
 import { searchBoards } from '../../../api';
+import client from '../../../api/client';
+import { avatarColor } from '../../utils/avatar';
+import { followCache } from '../../utils/followCache';
 import styles from './UserProfileView.module.css';
-
-const AVATAR_COLORS = ['#E03131', '#2F9E44', '#1971C2', '#F08C00', '#7048E8'];
-
-function avatarColor(username) {
-  if (!username) return AVATAR_COLORS[0];
-  let sum = 0;
-  for (let i = 0; i < username.length; i++) sum += username.charCodeAt(i);
-  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
-}
 
 const MY_USER_ID = 1;
 
 export default function UserProfileView({ userId }) {
   const router = useRouter();
   const [profile, setProfile] = useState(null);
-  const [following, setFollowing] = useState(false);
+  const [following, setFollowing] = useState(() => followCache[userId] ?? null);
   const [followLoading, setFollowLoading] = useState(false);
   const [posts, setPosts] = useState([]);
 
   useEffect(() => {
+    if (userId === MY_USER_ID) {
+      router.replace('/profile');
+      return;
+    }
     getUserProfile(userId).then((data) => {
       if (data) setProfile(data);
     });
-    checkFollow({ userId: MY_USER_ID, targetId: userId }).then((data) => {
-      if (data !== null) setFollowing(data);
-    });
+    if (followCache[userId] === undefined) {
+      checkFollow({ userId: MY_USER_ID, targetId: userId }).then((data) => {
+        if (data !== null) {
+          followCache[userId] = data;
+          setFollowing(data);
+        }
+      });
+    }
     searchBoards({ userId }).then((data) => {
       const boards = data?.boards;
       if (boards && Array.isArray(boards)) setPosts(boards);
@@ -38,15 +41,20 @@ export default function UserProfileView({ userId }) {
 
   async function handleFollow() {
     setFollowLoading(true);
-    if (following) {
-      await unfollowUser({ userId: MY_USER_ID, targetId: userId });
-      setFollowing(false);
-      setProfile((prev) => prev ? { ...prev, followerCount: (prev.followerCount ?? 1) - 1 } : prev);
-    } else {
+    const next = !following;
+    if (next) {
       await followUser({ userId: MY_USER_ID, targetId: userId });
-      setFollowing(true);
-      setProfile((prev) => prev ? { ...prev, followerCount: (prev.followerCount ?? 0) + 1 } : prev);
+    } else {
+      await unfollowUser({ userId: MY_USER_ID, targetId: userId });
     }
+    followCache[userId] = next;
+    setFollowing(next);
+    // 팔로우 변이 후 유저 프로필 캐시 무효화 → 재방문 시 최신 팔로워 수 반영
+    client.invalidate(`/api/users/${userId}`);
+    setProfile((prev) => prev
+      ? { ...prev, followerCount: (prev.followerCount ?? 0) + (next ? 1 : -1) }
+      : prev
+    );
     setFollowLoading(false);
   }
 
@@ -67,7 +75,7 @@ export default function UserProfileView({ userId }) {
     );
   }
 
-  const color = avatarColor(profile.username);
+  const color = avatarColor(userId);
   const initial = profile.username ? profile.username[0].toUpperCase() : '?';
 
   return (
@@ -145,13 +153,13 @@ export default function UserProfileView({ userId }) {
               className={styles.cell}
               onClick={() => router.push(`/boards/${post.boardId}`)}
             >
-              {post.mediaUrls?.[0] ? (
-                <img src={post.mediaUrls[0]} alt="" className={styles.img} loading="lazy" />
-              ) : (
-                <div className={styles.textCell}>
-                  <p>{post.content}</p>
-                </div>
-              )}
+              <img
+                src={post.mediaUrls?.[0] || '/no-image.svg'}
+                alt=""
+                className={styles.img}
+                loading="lazy"
+                onError={(e) => { e.currentTarget.src = '/no-image.svg'; }}
+              />
             </button>
           ))}
         </div>

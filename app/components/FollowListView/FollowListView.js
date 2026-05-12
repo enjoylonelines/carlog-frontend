@@ -2,16 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getFollowers, getFollowings } from '../../../api';
+import { avatarColor } from '../../utils/avatar';
 import styles from './FollowListView.module.css';
-
-const AVATAR_COLORS = ['#E03131', '#2F9E44', '#1971C2', '#F08C00', '#7048E8'];
-
-function avatarColor(username) {
-  if (!username) return AVATAR_COLORS[0];
-  let sum = 0;
-  for (let i = 0; i < username.length; i++) sum += username.charCodeAt(i);
-  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
-}
 
 export default function FollowListView({ initialTab = 'followers', userId }) {
   const router = useRouter();
@@ -76,7 +68,7 @@ export default function FollowListView({ initialTab = 'followers', userId }) {
 
         {!loading && list.map((item) => {
           const displayUserId = tab === 'followers' ? item.userId : item.targetId;
-          const color = avatarColor(item.username);
+          const color = avatarColor(displayUserId);
           const initial = item.username ? item.username[0].toUpperCase() : '?';
           return (
             <button
