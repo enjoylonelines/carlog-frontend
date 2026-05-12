@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './PostCard.module.css';
 import { checkFollow, followUser, unfollowUser } from '../../../api';
@@ -22,8 +22,12 @@ import { followCache } from '../../utils/followCache';
 export default function PostCard({ post }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const mediaListRef = useRef(null);
 
-  const { boardId, userId, username, avatarColor, profileImageUrl, content, hitcount, createdAt, tags, imageUrl, commentCount } = post;
+  const { boardId, userId, username, avatarColor, content, hitcount, createdAt, tags, imageUrl, mediaUrls, commentCount } = post;
+  const images = mediaUrls?.length ? mediaUrls : imageUrl ? [imageUrl] : [];
   const color = avatarColor || getAvatarColor(userId);
   const isLong = content && content.length > 80;
   const isOwnPost = userId === MY_USER_ID;
@@ -53,6 +57,28 @@ export default function PostCard({ post }) {
     } else {
       await unfollowUser({ userId: MY_USER_ID, targetId: userId });
     }
+  };
+
+  const handleMediaScroll = () => {
+    const list = mediaListRef.current;
+    if (!list) return;
+    const nextIndex = Math.round(list.scrollLeft / list.clientWidth);
+    setCurrentMediaIndex(Math.min(Math.max(nextIndex, 0), images.length - 1));
+  };
+
+  const moveMedia = (event, direction) => {
+    event.stopPropagation();
+    const list = mediaListRef.current;
+    if (!list) return;
+    const nextIndex = Math.min(
+      Math.max(currentMediaIndex + direction, 0),
+      images.length - 1
+    );
+    list.scrollTo({
+      left: nextIndex * list.clientWidth,
+      behavior: 'smooth',
+    });
+    setCurrentMediaIndex(nextIndex);
   };
 
   return (
@@ -100,15 +126,49 @@ export default function PostCard({ post }) {
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && router.push(`/boards/${boardId}`)}
       >
-      {imageUrl && (
-        <div className={styles.imageWrap}>
-          <img
-            src={imageUrl}
-            alt={`${username}의 게시물`}
-            className={styles.image}
-            loading="lazy"
-            onError={(e) => { e.currentTarget.src = '/no-image.svg'; }}
-          />
+
+      {images.length > 0 && (
+        <div className={styles.mediaFrame}>
+          <div className={styles.mediaList} ref={mediaListRef} onScroll={handleMediaScroll}>
+            {images.map((url, index) => (
+              <div className={styles.imageWrap} key={`${url}-${index}`}>
+                <img
+                  src={url}
+                  alt={`${username} 게시물 이미지 ${index + 1}`}
+                  className={styles.image}
+                  loading="lazy"
+                  onError={(e) => { e.currentTarget.src = '/no-image.svg'; }}
+                />
+              </div>
+            ))}
+          </div>
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                className={`${styles.mediaArrow} ${styles.mediaArrowPrev}`}
+                onClick={(event) => moveMedia(event, -1)}
+                disabled={currentMediaIndex === 0}
+                aria-label="Previous image"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className={`${styles.mediaArrow} ${styles.mediaArrowNext}`}
+                onClick={(event) => moveMedia(event, 1)}
+                disabled={currentMediaIndex === images.length - 1}
+                aria-label="Next image"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </>
+          )}
+
         </div>
       )}
 

@@ -49,6 +49,7 @@ export default function FeedPage() {
   const scrollRestoredRef = useRef(false);
   const scrollPendingRef = useRef(false);
 
+
   // 캐시된 posts가 있을 때만 페인트 전 즉시 복원 — 없으면 loadBoards 후 scrollPendingRef로 처리
   useLayoutEffect(() => {
     if (_cachedPosts.length > 0 && !scrollRestoredRef.current && !selectedTag && !keyword) {
@@ -62,6 +63,7 @@ export default function FeedPage() {
       if (data && Array.isArray(data)) setHashtags(data);
     });
   }, []);
+
 
   const loadBoards = useCallback(async (pageNo, append) => {
     if (isLoadingRef.current) return;
@@ -117,6 +119,7 @@ export default function FeedPage() {
     loadBoards(1, false);
   }, [loadBoards, selectedTag, keyword]);
 
+
   // posts가 DOM에 반영된 후 pending 스크롤 복원 실행 (새로고침 포함)
   useEffect(() => {
     if (scrollPendingRef.current && posts.length > 0) {
@@ -148,6 +151,7 @@ export default function FeedPage() {
     if (keyword) params.set('keyword', keyword);
     router.push(`/?${params.toString()}`);
   }, [keyword, router]);
+
 
   return (
     <>

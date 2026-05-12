@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { getHashtags, createBoard, updateBoard } from '../../../api';
