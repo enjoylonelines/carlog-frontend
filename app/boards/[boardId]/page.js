@@ -1,15 +1,12 @@
-'use client';
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import CreatePost from '../../components/CreatePost/CreatePost';
-import boardApi from '@/apis/boardApi';
-import { getComments, createComment, deleteComment, getReplies } from '../../lib/api';
-import styles from './page.module.css';
+"use client";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import CreatePost from "../../components/CreatePost/CreatePost";
+import { getBoard, deleteBoard, getComments, createComment, deleteComment, getReplies, checkFollow, followUser, unfollowUser, getUserProfile } from "../../../api";
+import { avatarColor } from "../../utils/avatar";
+import styles from "./page.module.css";
 
-const AVATAR_COLORS = ['#E03131', '#45B7D1', '#6C5CE7', '#96CEB4', '#FD9644', '#2196F3', '#FF9800'];
-const avatarColor = (userId) => AVATAR_COLORS[(userId || 0) % AVATAR_COLORS.length];
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
-
 const mediaUrl = (url) => {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
@@ -17,17 +14,16 @@ const mediaUrl = (url) => {
 };
 
 function timeAgo(dateStr) {
-  if (!dateStr) return '';
+  if (!dateStr) return "";
   const diff = (Date.now() - new Date(dateStr)) / 1000;
-  if (diff < 60) return '방금 전';
+  if (diff < 60) return "방금 전";
   if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
   if (diff < 2592000) return `${Math.floor(diff / 86400)}일 전`;
-  return new Date(dateStr).toLocaleDateString('ko-KR');
+  return new Date(dateStr).toLocaleDateString("ko-KR");
 }
 
 const MY_USER_ID = 1;
-const MY_USERNAME = 'me';
 
 export default function BoardDetailPage() {
   const { boardId } = useParams();
@@ -36,10 +32,20 @@ export default function BoardDetailPage() {
   const [board, setBoard] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [commentText, setCommentText] = useState('');
+  const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const [myUsername, setMyUsername] = useState("");
+  const [hasMoreComments, setHasMoreComments] = useState(true);
+  const [totalCommentCount, setTotalCommentCount] = useState(0);
+
+  const commentPageRef = useRef(1);
+  const isLoadingCommentsRef = useRef(false);
+  const commentSentinelRef = useRef(null);
+
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
 
   // 대댓글 상태
@@ -52,21 +58,76 @@ export default function BoardDetailPage() {
   const mediaListRef = useRef(null);
 
   const mediaUrls = board?.mediaUrls || [];
-  const firstImageUrl = mediaUrls.length > 0 ? mediaUrl(mediaUrls[0]) : null;
+  const firstImageUrl = mediaUrls.length > 0 ? mediaUrl(mediaUrls[0]) : '/no-image.svg';
   const isOwner = board?.userId === MY_USER_ID;
 
   useEffect(() => {
-    Promise.all([
-      boardApi.boardRead(boardId).then((response) => response.data),
-      getComments(boardId),
-    ]).then(([boardData, commentData]) => {
+    getUserProfile(MY_USER_ID).then((data) => {
+      if (data?.username) setMyUsername(data.username);
+    });
+  }, []);
+
+  const loadComments = useCallback(async (page, append) => {
+    if (isLoadingCommentsRef.current) return;
+    isLoadingCommentsRef.current = true;
+    if (!append) setHasMoreComments(true);
+
+    const data = await getComments(boardId, page);
+    isLoadingCommentsRef.current = false;
+
+    setComments((prev) => append ? [...prev, ...data.comments] : data.comments);
+    setHasMoreComments(data.hasNext);
+    if (!append) setTotalCommentCount(data.totalCount ?? 0);
+    commentPageRef.current = page;
+  }, [boardId]);
+
+  useEffect(() => {
+    setLoading(true);
+    commentPageRef.current = 1;
+    Promise.all([getBoard(boardId), loadComments(1, false)]).then(([boardData]) => {
       setBoard(boardData);
       setComments(commentData);
       setCurrentMediaIndex(0);
+
       setLoading(false);
     });
+  }, [boardId, loadComments]);
 
-  }, [boardId]);
+  useEffect(() => {
+    const sentinel = commentSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLoadingCommentsRef.current && hasMoreComments) {
+          loadComments(commentPageRef.current + 1, true);
+        }
+      },
+      { rootMargin: '100px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreComments, loadComments, comments.length]);
+
+  useEffect(() => {
+    if (!board || isOwner) return;
+    let cancelled = false;
+    checkFollow({ userId: MY_USER_ID, targetId: board.userId }).then(isFollowing => {
+      if (!cancelled) setFollowing(isFollowing);
+    });
+    return () => { cancelled = true; };
+  }, [board?.userId, isOwner]);
+
+  const handleFollow = async () => {
+    const next = !following;
+    setFollowing(next);
+    if (next) {
+      await followUser({ userId: MY_USER_ID, targetId: board.userId });
+    } else {
+      await unfollowUser({ userId: MY_USER_ID, targetId: board.userId });
+    }
+  };
 
   useEffect(() => {
     mediaListRef.current?.scrollTo({ left: 0 });
@@ -99,7 +160,8 @@ export default function BoardDetailPage() {
   };
 
   const handleCommentSubmit = async () => {
-    if (!commentText.trim() || submitting) return;
+    if (!commentText.trim() || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setSubmitting(true);
 
     const currentReplyingTo = replyingTo; // 클로저 스냅샷
@@ -112,14 +174,16 @@ export default function BoardDetailPage() {
 
     const result = await createComment(payload);
     if (!result) {
+      isSubmittingRef.current = false;
       setSubmitting(false);
       return;
     }
+    sessionStorage.setItem('feed_stale', '1');
 
     const newEntry = {
       commentId: result.commentId,
       userId: MY_USER_ID,
-      username: MY_USERNAME,
+      username: myUsername,
       content: commentText,
       createdAt: new Date().toISOString(),
       replyCount: 0,
@@ -128,28 +192,29 @@ export default function BoardDetailPage() {
 
     if (currentReplyingTo) {
       const parentId = currentReplyingTo.commentId;
-      setComments((prev) =>
-        prev.map((c) =>
-          c.commentId === parentId ? { ...c, replyCount: (c.replyCount || 0) + 1 } : c
-        )
-      );
+      setComments((prev) => prev.map((c) => (c.commentId === parentId ? { ...c, replyCount: (c.replyCount || 0) + 1 } : c)));
       setRepliesCache((prev) => ({
         ...prev,
         [parentId]: [...(prev[parentId] || []), newEntry],
       }));
       setExpandedReplies((prev) => new Set([...prev, parentId]));
       setReplyingTo(null);
+      setTotalCommentCount((prev) => prev + 1);
     } else {
       setComments((prev) => [...prev, newEntry]);
+      setTotalCommentCount((prev) => prev + 1);
     }
 
-    setCommentText('');
+    setCommentText("");
+    isSubmittingRef.current = false;
     setSubmitting(false);
   };
 
   const handleCommentDelete = async (commentId) => {
     await deleteComment(commentId);
+    sessionStorage.setItem('feed_stale', '1');
     setComments((prev) => prev.filter((c) => c.commentId !== commentId));
+    setTotalCommentCount((prev) => Math.max(0, prev - 1));
     // 대댓글 캐시에서도 제거
     setRepliesCache((prev) => {
       const next = { ...prev };
@@ -164,11 +229,8 @@ export default function BoardDetailPage() {
       ...prev,
       [parentId]: (prev[parentId] || []).filter((r) => r.commentId !== replyId),
     }));
-    setComments((prev) =>
-      prev.map((c) =>
-        c.commentId === parentId ? { ...c, replyCount: Math.max(0, (c.replyCount || 1) - 1) } : c
-      )
-    );
+    setComments((prev) => prev.map((c) => (c.commentId === parentId ? { ...c, replyCount: Math.max(0, (c.replyCount || 1) - 1) } : c)));
+    setTotalCommentCount((prev) => Math.max(0, prev - 1));
   };
 
   const handleToggleReplies = async (commentId) => {
@@ -206,7 +268,7 @@ export default function BoardDetailPage() {
 
   const cancelReply = () => {
     setReplyingTo(null);
-    setCommentText('');
+    setCommentText("");
   };
 
   if (loading) {
@@ -221,7 +283,9 @@ export default function BoardDetailPage() {
     return (
       <div className={styles.loadingWrap}>
         <p className={styles.errorText}>게시물을 찾을 수 없어요.</p>
-        <button className={styles.backBtn} onClick={() => router.back()}>← 돌아가기</button>
+        <button className={styles.backBtn} onClick={() => router.back()}>
+          ← 돌아가기
+        </button>
       </div>
     );
   }
@@ -233,7 +297,7 @@ export default function BoardDetailPage() {
         <div className={styles.topBar}>
           <button className={styles.backBtn} onClick={() => router.back()}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M19 12H5M12 5l-7 7 7 7"/>
+              <path d="M19 12H5M12 5l-7 7 7 7" />
             </svg>
           </button>
           <span className={styles.topTitle}>게시물</span>
@@ -241,14 +305,16 @@ export default function BoardDetailPage() {
             <div className={styles.actions}>
               <button className={styles.actionBtn} onClick={() => setShowEdit(true)}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
               </button>
               <button className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={() => setShowDeleteConfirm(true)}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-                  <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14H6L5 6" />
+                  <path d="M10 11v6M14 11v6" />
+                  <path d="M9 6V4h6v2" />
                 </svg>
               </button>
             </div>
@@ -260,22 +326,30 @@ export default function BoardDetailPage() {
           {/* 작성자 정보 */}
           <div className={styles.authorRow}>
             <div className={styles.avatar} style={{ background: avatarColor(board.userId) }}>
-              {(board.username || 'U')[0].toUpperCase()}
+              {(board.username || "U")[0].toUpperCase()}
             </div>
             <div className={styles.authorMeta}>
               <span className={styles.authorName}>{board.username || `user${board.userId}`}</span>
               <span className={styles.postTime}>{timeAgo(board.createdDate)}</span>
             </div>
-            <button className={styles.followBtn}>팔로우</button>
+            {!isOwner && (
+              <button
+                className={`${styles.followBtn} ${following ? styles.following : ''}`}
+                onClick={handleFollow}
+              >
+                {following ? '팔로잉' : '팔로우'}
+              </button>
+            )}
           </div>
 
           {/* 이미지 */}
+
           {mediaUrls.length > 0 && (
             <div className={styles.mediaFrame}>
               <div className={styles.mediaList} ref={mediaListRef} onScroll={handleMediaScroll}>
                 {mediaUrls.map((url, index) => (
                   <div className={styles.imageWrap} key={`${url}-${index}`}>
-                    <img src={mediaUrl(url)} alt={`게시물 이미지 ${index + 1}`} className={styles.image} />
+                    <img src={mediaUrl(url)} alt={`게시물 이미지 ${index + 1}`} className={styles.image} onError={(e) => { e.currentTarget.src = '/no-image.svg'; }} />
                   </div>
                 ))}
               </div>
@@ -308,11 +382,14 @@ export default function BoardDetailPage() {
             </div>
           )}
 
+
           {/* 태그 */}
           {board.hashtags && board.hashtags.length > 0 && (
             <div className={styles.tags}>
               {board.hashtags.map((tag) => (
-                <span key={tag} className={styles.tag}>#{tag}</span>
+                <span key={tag} className={styles.tag}>
+                  #{tag}
+                </span>
               ))}
             </div>
           )}
@@ -324,23 +401,23 @@ export default function BoardDetailPage() {
           <div className={styles.stats}>
             <span className={styles.stat}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
               </svg>
               {(board.hitcount || 0).toLocaleString()}
             </span>
             <span className={styles.stat}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
-              {comments.length}
+              {totalCommentCount}
             </span>
           </div>
 
           {/* 댓글 목록 */}
           <div className={styles.commentSection}>
             <div className={styles.commentHeader}>
-              댓글 <span className={styles.commentCount}>{comments.length}</span>
+              댓글 <span className={styles.commentCount}>{totalCommentCount}</span>
             </div>
 
             {comments.length === 0 ? (
@@ -351,7 +428,7 @@ export default function BoardDetailPage() {
                   {/* 부모 댓글 */}
                   <div className={styles.commentItem}>
                     <div className={styles.commentAvatar} style={{ background: avatarColor(c.userId) }}>
-                      {(c.username || 'U')[0].toUpperCase()}
+                      {(c.username || "U")[0].toUpperCase()}
                     </div>
                     <div className={styles.commentBody}>
                       <div className={styles.commentTop}>
@@ -360,35 +437,33 @@ export default function BoardDetailPage() {
                       </div>
                       <p className={styles.commentText}>{c.content}</p>
                       <div className={styles.commentActions}>
-                        <button
-                          className={styles.replyBtn}
-                          onClick={() => startReply(c)}
-                        >
+                        <button className={styles.replyBtn} onClick={() => startReply(c)}>
                           답글 달기
                         </button>
-                        {(c.replyCount > 0 || (repliesCache[c.commentId]?.length > 0)) && (
-                          <button
-                            className={styles.toggleRepliesBtn}
-                            onClick={() => handleToggleReplies(c.commentId)}
-                          >
-                            {loadingReplies.has(c.commentId) ? (
-                              '로딩 중...'
-                            ) : expandedReplies.has(c.commentId) ? (
-                              '답글 숨기기'
-                            ) : (
-                              `답글 보기(${c.replyCount || repliesCache[c.commentId]?.length || 0}개)`
-                            )}
+                        {(c.replyCount > 0 || repliesCache[c.commentId]?.length > 0) && (
+                          <button className={styles.toggleRepliesBtn} onClick={() => handleToggleReplies(c.commentId)}>
+                            {loadingReplies.has(c.commentId)
+                              ? "로딩 중..."
+                              : expandedReplies.has(c.commentId)
+                                ? "답글 숨기기"
+                                : `답글 보기(${c.replyCount || repliesCache[c.commentId]?.length || 0}개)`}
                           </button>
                         )}
                       </div>
                     </div>
                     {c.userId === MY_USER_ID && (
-                      <button
-                        className={styles.commentDeleteBtn}
-                        onClick={() => handleCommentDelete(c.commentId)}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      <button className={styles.commentDeleteBtn} onClick={() => handleCommentDelete(c.commentId)}>
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        >
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>
                       </button>
                     )}
@@ -400,7 +475,7 @@ export default function BoardDetailPage() {
                       {(repliesCache[c.commentId] || []).map((r) => (
                         <div key={r.commentId} className={`${styles.commentItem} ${styles.replyItem}`}>
                           <div className={styles.commentAvatar} style={{ background: avatarColor(r.userId) }}>
-                            {(r.username || 'U')[0].toUpperCase()}
+                            {(r.username || "U")[0].toUpperCase()}
                           </div>
                           <div className={styles.commentBody}>
                             <div className={styles.commentTop}>
@@ -410,12 +485,18 @@ export default function BoardDetailPage() {
                             <p className={styles.commentText}>{r.content}</p>
                           </div>
                           {r.userId === MY_USER_ID && (
-                            <button
-                              className={styles.commentDeleteBtn}
-                              onClick={() => handleReplyDelete(r.commentId, c.commentId)}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            <button className={styles.commentDeleteBtn} onClick={() => handleReplyDelete(r.commentId, c.commentId)}>
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                              >
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
                               </svg>
                             </button>
                           )}
@@ -428,6 +509,7 @@ export default function BoardDetailPage() {
             )}
           </div>
 
+          {hasMoreComments && <div ref={commentSentinelRef} style={{ height: 1 }} />}
           <div className={styles.commentInputSpacer} />
         </div>
       </div>
@@ -437,7 +519,9 @@ export default function BoardDetailPage() {
         {replyingTo && (
           <div className={styles.replyingToBar}>
             <span className={styles.replyingToText}>@{replyingTo.username}에게 답글 작성 중</span>
-            <button className={styles.cancelReplyBtn} onClick={cancelReply}>✕</button>
+            <button className={styles.cancelReplyBtn} onClick={cancelReply}>
+              ✕
+            </button>
           </div>
         )}
         <div className={styles.commentBarInner}>
@@ -447,20 +531,25 @@ export default function BoardDetailPage() {
           <input
             ref={commentInputRef}
             className={styles.commentInput}
-            placeholder={replyingTo ? `@${replyingTo.username}에게 답글...` : '댓글 추가...'}
+            placeholder={replyingTo ? `@${replyingTo.username}에게 답글...` : "댓글 추가..."}
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCommentSubmit(); } }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleCommentSubmit();
+              }
+            }}
             maxLength={300}
           />
           <button
-            className={`${styles.sendBtn} ${commentText.trim() ? styles.sendBtnActive : ''}`}
+            className={`${styles.sendBtn} ${commentText.trim() ? styles.sendBtnActive : ""}`}
             onClick={handleCommentSubmit}
             disabled={!commentText.trim() || submitting}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="22" y1="2" x2="11" y2="13"/>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
           </button>
         </div>
@@ -472,8 +561,8 @@ export default function BoardDetailPage() {
           initialPost={{ ...board, tags: board.hashtags || [], imageUrl: firstImageUrl }}
           onClose={() => setShowEdit(false)}
           onSaved={() => {
-            boardApi.boardRead(boardId).then((response) => {
-              if (response.data) setBoard(response.data);
+            getBoard(boardId).then((data) => {
+              if (data) setBoard(data);
             });
           }}
         />
@@ -485,8 +574,12 @@ export default function BoardDetailPage() {
           <div className={styles.confirmBox} onClick={(e) => e.stopPropagation()}>
             <p className={styles.confirmText}>게시물을 삭제할까요?</p>
             <div className={styles.confirmActions}>
-              <button className={styles.confirmCancel} onClick={() => setShowDeleteConfirm(false)}>취소</button>
-              <button className={styles.confirmDelete} onClick={handleDelete}>삭제</button>
+              <button className={styles.confirmCancel} onClick={() => setShowDeleteConfirm(false)}>
+                취소
+              </button>
+              <button className={styles.confirmDelete} onClick={handleDelete}>
+                삭제
+              </button>
             </div>
           </div>
         </div>
@@ -494,4 +587,3 @@ export default function BoardDetailPage() {
     </>
   );
 }
-
