@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import CreatePost from "../../components/CreatePost/CreatePost";
 import { getBoard, deleteBoard, getComments, createComment, deleteComment, getReplies, checkFollow, followUser, unfollowUser, getUserProfile } from "../../../api";
+import Image from "next/image";
 import { avatarColor } from "../../utils/avatar";
 import styles from "./page.module.css";
 
@@ -86,9 +87,7 @@ export default function BoardDetailPage() {
     commentPageRef.current = 1;
     Promise.all([getBoard(boardId), loadComments(1, false)]).then(([boardData]) => {
       setBoard(boardData);
-      setComments(commentData);
       setCurrentMediaIndex(0);
-
       setLoading(false);
     });
   }, [boardId, loadComments]);
@@ -349,7 +348,7 @@ export default function BoardDetailPage() {
               <div className={styles.mediaList} ref={mediaListRef} onScroll={handleMediaScroll}>
                 {mediaUrls.map((url, index) => (
                   <div className={styles.imageWrap} key={`${url}-${index}`}>
-                    <img src={mediaUrl(url)} alt={`게시물 이미지 ${index + 1}`} className={styles.image} onError={(e) => { e.currentTarget.src = '/no-image.svg'; }} />
+                    <Image src={mediaUrl(url)} alt={`게시물 이미지 ${index + 1}`} className={styles.image} fill unoptimized onError={(e) => { e.currentTarget.src = '/no-image.svg'; }} />
                   </div>
                 ))}
               </div>

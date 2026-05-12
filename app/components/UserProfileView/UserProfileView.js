@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { getUserProfile, checkFollow, followUser, unfollowUser } from '../../../api';
 import { searchBoards } from '../../../api';
 import client from '../../../api/client';
+import Image from 'next/image';
 import { avatarColor } from '../../utils/avatar';
 import { followCache } from '../../utils/followCache';
 import styles from './UserProfileView.module.css';
@@ -92,7 +93,7 @@ export default function UserProfileView({ userId }) {
 
       <div className={styles.header}>
         {profile.profileImageUrl ? (
-          <img src={profile.profileImageUrl} alt="" className={styles.avatarLg} />
+          <Image src={profile.profileImageUrl} alt="" width={80} height={80} className={styles.avatarLg} />
         ) : (
           <div className={styles.avatarLg} style={{ background: color }}>
             {initial}

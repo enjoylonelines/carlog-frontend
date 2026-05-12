@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { getUserProfile, searchBoards } from '../../../api';
 import ProfileEditModal from '../ProfileEditModal/ProfileEditModal';
 import styles from './ProfileView.module.css';
@@ -95,7 +96,7 @@ export default function ProfileView() {
       <div className={styles.wrap}>
         <div className={styles.header}>
           {profile.profileImageUrl ? (
-            <img src={profile.profileImageUrl} alt="프로필" className={styles.avatarLg} style={{ objectFit: 'cover' }} />
+            <Image src={profile.profileImageUrl} alt="프로필" width={80} height={80} className={styles.avatarLg} />
           ) : (
             <div className={styles.avatarLg} style={{ background: profile.avatarColor }}>
               {profile.username[0].toUpperCase()}

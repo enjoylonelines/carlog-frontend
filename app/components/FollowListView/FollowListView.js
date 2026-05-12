@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { getFollowers, getFollowings } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
 import styles from './FollowListView.module.css';
@@ -77,7 +78,7 @@ export default function FollowListView({ initialTab = 'followers', userId }) {
               onClick={() => router.push(`/users/${displayUserId}`)}
             >
               {item.profileImageUrl ? (
-                <img src={item.profileImageUrl} alt="" className={styles.avatar} />
+                <Image src={item.profileImageUrl} alt="" width={44} height={44} className={styles.avatar} />
               ) : (
                 <div className={styles.avatar} style={{ background: color }}>
                   {initial}
