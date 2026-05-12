@@ -61,6 +61,8 @@ export default function BoardDetailPage() {
   const mediaUrls = board?.mediaUrls || [];
   const firstImageUrl = mediaUrls.length > 0 ? mediaUrl(mediaUrls[0]) : '/no-image.svg';
   const isOwner = board?.userId === MY_USER_ID;
+  const boardUserId = board?.userId;
+  const isPageLoading = loading || (board && String(board.boardId) !== String(boardId));
 
   useEffect(() => {
     getUserProfile(MY_USER_ID).then((data) => {
@@ -71,7 +73,6 @@ export default function BoardDetailPage() {
   const loadComments = useCallback(async (page, append) => {
     if (isLoadingCommentsRef.current) return;
     isLoadingCommentsRef.current = true;
-    if (!append) setHasMoreComments(true);
 
     const data = await getComments(boardId, page);
     isLoadingCommentsRef.current = false;
@@ -83,10 +84,13 @@ export default function BoardDetailPage() {
   }, [boardId]);
 
   useEffect(() => {
-    setLoading(true);
     commentPageRef.current = 1;
-    Promise.all([getBoard(boardId), loadComments(1, false)]).then(([boardData]) => {
+    Promise.all([getBoard(boardId), getComments(boardId, 1)]).then(([boardData, commentData]) => {
       setBoard(boardData);
+      setComments(commentData.comments);
+      setHasMoreComments(commentData.hasNext);
+      setTotalCommentCount(commentData.totalCount ?? 0);
+      commentPageRef.current = 1;
       setCurrentMediaIndex(0);
       setLoading(false);
     });
@@ -110,13 +114,13 @@ export default function BoardDetailPage() {
   }, [hasMoreComments, loadComments, comments.length]);
 
   useEffect(() => {
-    if (!board || isOwner) return;
+    if (!boardUserId || isOwner) return;
     let cancelled = false;
-    checkFollow({ userId: MY_USER_ID, targetId: board.userId }).then(isFollowing => {
+    checkFollow({ userId: MY_USER_ID, targetId: boardUserId }).then(isFollowing => {
       if (!cancelled) setFollowing(isFollowing);
     });
     return () => { cancelled = true; };
-  }, [board?.userId, isOwner]);
+  }, [boardUserId, isOwner]);
 
   const handleFollow = async () => {
     const next = !following;
@@ -270,7 +274,7 @@ export default function BoardDetailPage() {
     setCommentText("");
   };
 
-  if (loading) {
+  if (isPageLoading) {
     return (
       <div className={styles.loadingWrap}>
         <div className={styles.spinner} />

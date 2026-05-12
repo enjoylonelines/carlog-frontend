@@ -63,7 +63,7 @@ function AuthContextProvider({ children }) {
                 removeAuthHeader();
             }
         }
-    });
+    }, [user, accessToken, isLoading]);
 
     // Axios 및 전역 상태가 설정 중일 경우 UI를 보여주지 않음
     if (isLoading) {
