@@ -6,6 +6,13 @@ import { getBoard, deleteBoard, getComments, createComment, deleteComment, getRe
 import { avatarColor } from "../../utils/avatar";
 import styles from "./page.module.css";
 
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
+const mediaUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_ORIGIN}${url}`;
+};
+
 function timeAgo(dateStr) {
   if (!dateStr) return "";
   const diff = (Date.now() - new Date(dateStr)) / 1000;
@@ -47,12 +54,9 @@ export default function BoardDetailPage() {
 
   const commentInputRef = useRef(null);
 
-  const imageUrl = board?.mediaUrls?.[0] || '/no-image.svg';
+  const mediaUrls = board?.mediaUrls || [];
+  const firstImageUrl = mediaUrls.length > 0 ? mediaUrl(mediaUrls[0]) : '/no-image.svg';
   const isOwner = board?.userId === MY_USER_ID;
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   useEffect(() => {
     getUserProfile(MY_USER_ID).then((data) => {
@@ -120,7 +124,7 @@ export default function BoardDetailPage() {
   };
 
   const handleDelete = async () => {
-    await deleteBoard(boardId);
+    await boardApi.boardDelete(boardId);
     router.back();
   };
 
@@ -308,9 +312,17 @@ export default function BoardDetailPage() {
           </div>
 
           {/* 이미지 */}
-          <div className={styles.imageWrap}>
-            <img src={imageUrl} alt="게시물 이미지" className={styles.image}
-              onError={(e) => { e.currentTarget.src = '/no-image.svg'; }} />
+          <div className={styles.mediaList}>
+            {mediaUrls.length > 0 ? mediaUrls.map((url, index) => (
+              <div className={styles.imageWrap} key={`${url}-${index}`}>
+                <img src={mediaUrl(url)} alt={`게시물 이미지 ${index + 1}`} className={styles.image}
+                  onError={(e) => { e.currentTarget.src = '/no-image.svg'; }} />
+              </div>
+            )) : (
+              <div className={styles.imageWrap}>
+                <img src="/no-image.svg" alt="게시물 이미지" className={styles.image} />
+              </div>
+            )}
           </div>
 
           {/* 태그 */}
@@ -488,7 +500,7 @@ export default function BoardDetailPage() {
       {/* 수정 시트 */}
       {showEdit && (
         <CreatePost
-          initialPost={{ ...board, imageUrl }}
+          initialPost={{ ...board, tags: board.hashtags || [], imageUrl: firstImageUrl }}
           onClose={() => setShowEdit(false)}
           onSaved={() => {
             getBoard(boardId).then((data) => {

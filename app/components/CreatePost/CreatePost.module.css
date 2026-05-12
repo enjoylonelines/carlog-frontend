@@ -168,6 +168,76 @@
   margin-bottom: 10px;
 }
 
+.tagInputRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  margin-bottom: 12px;
+  padding: 0 10px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-card);
+}
+
+.hashMark {
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.tagInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.tagInput::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.tagAddBtn {
+  flex-shrink: 0;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.selectedTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.selectedTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 6px 10px 6px 12px;
+  border-radius: 18px;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.selectedTag span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(224, 49, 49, 0.12);
+  line-height: 1;
+}
+
 .tagChips {
   display: flex;
   flex-wrap: wrap;
