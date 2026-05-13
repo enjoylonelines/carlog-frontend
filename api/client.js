@@ -60,7 +60,9 @@ const client = {
       ? [base, "/api/boards"]
       : base.startsWith("/api/follows")
         ? [base, "/api/users"]
-        : [base];
+        : base.startsWith("/api/users")
+          ? [base, "/api/boards"]
+          : [base];
     for (const key of cache.keys()) {
       if (bases.some((b) => key.startsWith(b))) cache.delete(key);
     }

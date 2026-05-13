@@ -1,11 +1,18 @@
 'use client';
 import { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { getFollowers, getFollowings } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
 import styles from './FollowListView.module.css';
+
+function FollowAvatar({ src, color, initial }) {
+  const [errSrc, setErrSrc] = useState(null);
+  if (src && src !== errSrc) {
+    return <img src={src} alt="" className={styles.avatar} onError={() => setErrSrc(src)} />;
+  }
+  return <div className={styles.avatar} style={{ background: color }}>{initial}</div>;
+}
 
 export default function FollowListView({ initialTab = 'followers', userId: userIdProp }) {
   const { userId: ctxUserId } = useContext(AuthContext);
@@ -60,9 +67,7 @@ export default function FollowListView({ initialTab = 'followers', userId: userI
       </div>
 
       <div className={styles.list}>
-        {loading && (
-          <p className={styles.empty}>불러오는 중...</p>
-        )}
+        {loading && <p className={styles.empty}>불러오는 중...</p>}
 
         {!loading && list.length === 0 && (
           <p className={styles.empty}>
@@ -80,13 +85,7 @@ export default function FollowListView({ initialTab = 'followers', userId: userI
               className={styles.item}
               onClick={() => router.push(`/users/${displayUserId}`)}
             >
-              {item.profileImageUrl ? (
-                <Image src={item.profileImageUrl} alt="" width={44} height={44} className={styles.avatar} />
-              ) : (
-                <div className={styles.avatar} style={{ background: color }}>
-                  {initial}
-                </div>
-              )}
+              <FollowAvatar src={item.profileImageUrl} color={color} initial={initial} />
               <div className={styles.info}>
                 <span className={styles.username}>{item.username}</span>
               </div>

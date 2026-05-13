@@ -5,7 +5,6 @@ import { AuthContext } from '../../../contexts/AuthContext';
 import { getUserProfile, checkFollow, followUser, unfollowUser } from '../../../api';
 import { searchBoards } from '../../../api';
 import client from '../../../api/client';
-import Image from 'next/image';
 import { avatarColor } from '../../utils/avatar';
 import { followCache } from '../../utils/followCache';
 import styles from './UserProfileView.module.css';
@@ -17,6 +16,7 @@ export default function UserProfileView({ userId }) {
   const [following, setFollowing] = useState(() => followCache[userId] ?? null);
   const [followLoading, setFollowLoading] = useState(false);
   const [posts, setPosts] = useState([]);
+  const [avatarErr, setAvatarErr] = useState(false);
 
   useEffect(() => {
     if (userId === MY_USER_ID) {
@@ -92,12 +92,10 @@ export default function UserProfileView({ userId }) {
       </div>
 
       <div className={styles.header}>
-        {profile.profileImageUrl ? (
-          <Image src={profile.profileImageUrl} alt="" width={80} height={80} className={styles.avatarLg} />
+        {profile.profileImageUrl && !avatarErr ? (
+          <img src={profile.profileImageUrl} alt="" className={styles.avatarLg} onError={() => setAvatarErr(true)} />
         ) : (
-          <div className={styles.avatarLg} style={{ background: color }}>
-            {initial}
-          </div>
+          <div className={styles.avatarLg} style={{ background: color }}>{initial}</div>
         )}
         <div className={styles.infoCol}>
           <div className={styles.username}>{profile.username}</div>
