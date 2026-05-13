@@ -1,12 +1,14 @@
 import client from './client';
 
-export const getComments = async (boardId, page = 1, size = 15) => {
-  const res = await client.get('/api/comments', { params: { boardId, page, size } });
-  return res?.data ?? { comments: [], hasNext: false };
+export const getComments = async (boardId, lastCommentId = null) => {
+  const params = { boardId };
+  if (lastCommentId) params.lastCommentId = lastCommentId;
+  const res = await client.get('/api/comments', { params });
+  return res?.data ?? { comments: [], hasNext: false, nextCursor: null };
 };
 
 export const getReplies = async (boardId, parentCommentId) => {
-  const res = await client.get('/api/comments', { params: { boardId, parentCommentId, size: 100 } });
+  const res = await client.get('/api/comments', { params: { boardId, parentCommentId } });
   return res?.data?.comments ?? [];
 };
 

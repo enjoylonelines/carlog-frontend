@@ -1,12 +1,15 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { AuthContext } from '../../../contexts/AuthContext';
 import { getFollowers, getFollowings } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
 import styles from './FollowListView.module.css';
 
-export default function FollowListView({ initialTab = 'followers', userId }) {
+export default function FollowListView({ initialTab = 'followers', userId: userIdProp }) {
+  const { userId: ctxUserId } = useContext(AuthContext);
+  const userId = userIdProp ?? ctxUserId;
   const router = useRouter();
   const [tab, setTab] = useState(initialTab);
   const [list, setList] = useState([]);

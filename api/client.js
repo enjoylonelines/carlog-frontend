@@ -1,12 +1,10 @@
 import axios from 'axios';
 
-const PRIMARY = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-const SECONDARY = 'http://192.168.5.53';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:80';
 
-const primary = axios.create({ baseURL: PRIMARY });
-const secondary = axios.create({ baseURL: SECONDARY });
+const instance = axios.create({ baseURL: BASE_URL });
 
-function authInterceptor(config) {
+instance.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('accessToken');
     if (token) {
@@ -15,10 +13,7 @@ function authInterceptor(config) {
     }
   }
   return config;
-}
-
-primary.interceptors.request.use(authInterceptor);
-secondary.interceptors.request.use(authInterceptor);
+});
 
 // GET 응답 메모리 캐시 (TTL 없음 — 변이 요청 시 무효화)
 const cache = new Map();
@@ -36,16 +31,11 @@ const client = {
       return cache.get(cacheKey).data;
     }
 
-    // GET/변이 모두 primary만 시도, 실패 시 secondary로 폴백
     let result = null;
     try {
-      result = await primary.request(config);
+      result = await instance.request(config);
     } catch {
-      try {
-        result = await secondary.request(config);
-      } catch {
-        result = null;
-      }
+      result = null;
     }
 
     if (!result) return null;
