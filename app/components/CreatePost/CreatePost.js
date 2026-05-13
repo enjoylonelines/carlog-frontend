@@ -66,13 +66,13 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
           boardId: initialPost.boardId,
           content,
           hashtags: selectedTags,
-          mediaFile: mediaFiles[0] ?? null,
+          mediaFiles,
         });
       } else {
         await createBoard({
           content,
           hashtags: selectedTags,
-          mediaFile: mediaFiles[0] ?? null,
+          mediaFiles,
         });
       }
 
