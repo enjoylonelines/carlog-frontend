@@ -19,24 +19,23 @@ export const getBoard = async (boardId) => {
   return res?.data ?? null;
 };
 
-export const createBoard = async ({ userId = 1, content, hashtags = [], mediaFile = null }) => {
+export const createBoard = async ({ content, hashtags = [], mediaFiles = [] }) => {
   const form = new FormData();
-  form.append('userId', userId);
   form.append('content', content);
   hashtags.forEach((tag) => form.append('hashtags', tag));
-  if (mediaFile) form.append('mediaFiles', mediaFile);
+  mediaFiles.forEach((file) => form.append('mediaFiles', file));
   const res = await client.post('/api/boards/create', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return res?.data ?? null;
 };
 
-export const updateBoard = async ({ boardId, content, hashtags = [], mediaFile = null }) => {
+export const updateBoard = async ({ boardId, content, hashtags = [], mediaFiles = [] }) => {
   const form = new FormData();
   form.append('boardId', boardId);
   form.append('content', content);
   hashtags.forEach((tag) => form.append('hashtags', tag));
-  if (mediaFile) form.append('mediaFiles', mediaFile);
+  mediaFiles.forEach((file) => form.append('mediaFiles', file));
   const res = await client.put('/api/boards/update', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
