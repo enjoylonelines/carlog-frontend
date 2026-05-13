@@ -169,8 +169,8 @@ export default function EditAccountPage() {
       setConfirmPassword('');
       setLoginIdStatus(null);
       setEmailStatus(null);
-    } catch {
-      setError('수정 중 오류가 발생했습니다. 다시 시도해 주세요.');
+    } catch (err) {
+      setError(err?.serverMessage || '수정 중 오류가 발생했습니다. 다시 시도해 주세요.');
     } finally {
       setSubmitting(false);
     }
