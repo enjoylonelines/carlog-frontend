@@ -4,14 +4,14 @@ import Navbar from "./components/Navbar/Navbar";
 import BottomNav from "./components/BottomNav/BottomNav";
 import CreatePost from "./components/CreatePost/CreatePost";
 import AuthContextProvider from "@/contexts/AuthContext";
+import { markFeedStale } from "./utils/feedRefresh";
 import styles from "./ClientShell.module.css";
 
 export default function ClientShell({ children }) {
   const [showCreate, setShowCreate] = useState(false);
 
   const handleCreateSaved = () => {
-    sessionStorage.setItem("feed_stale", "1");
-    window.dispatchEvent(new Event("carlog:board-saved"));
+    markFeedStale();
   };
 
   return (

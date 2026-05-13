@@ -7,6 +7,12 @@ import PostCard from './components/PostCard/PostCard';
 import { getHashtags, searchBoards } from '../api';
 import { useScrollRestore } from './hooks/useScrollRestore';
 import { avatarColor } from './utils/avatar';
+import {
+  BOARD_DELETED_EVENT,
+  BOARD_SAVED_EVENT,
+  clearFeedStale,
+  isFeedStale,
+} from './utils/feedRefresh';
 import styles from './page.module.css';
 
 const mapBoard = (board) => ({
@@ -124,7 +130,7 @@ export default function FeedPage() {
       return;
     }
 
-    sessionStorage.removeItem('feed_stale');
+    clearFeedStale();
     _cachedPosts = [];
     _cachedHasMore = true;
     _cachedPage = 1;
@@ -142,7 +148,7 @@ export default function FeedPage() {
 
   useEffect(() => {
     // 댓글 등 변이 후 스탈 플래그가 있으면 캐시 무효화
-    if (sessionStorage.getItem('feed_stale')) {
+    if (isFeedStale()) {
       refreshFeed();
       return;
     }
@@ -157,11 +163,11 @@ export default function FeedPage() {
   }, [loadBoards, refreshFeed, selectedTag, keyword]);
 
   useEffect(() => {
-    window.addEventListener('carlog:board-saved', refreshFeed);
-    window.addEventListener('carlog:board-deleted', refreshFeed);
+    window.addEventListener(BOARD_SAVED_EVENT, refreshFeed);
+    window.addEventListener(BOARD_DELETED_EVENT, refreshFeed);
     return () => {
-      window.removeEventListener('carlog:board-saved', refreshFeed);
-      window.removeEventListener('carlog:board-deleted', refreshFeed);
+      window.removeEventListener(BOARD_SAVED_EVENT, refreshFeed);
+      window.removeEventListener(BOARD_DELETED_EVENT, refreshFeed);
       if (refreshTimerRef.current) {
         window.clearTimeout(refreshTimerRef.current);
       }

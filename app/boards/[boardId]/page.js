@@ -17,6 +17,7 @@ import {
 } from "../../../api";
 import Image from "next/image";
 import { avatarColor } from "../../utils/avatar";
+import { BOARD_DELETED_EVENT, markFeedStale } from "../../utils/feedRefresh";
 import styles from "./page.module.css";
 import { createLike, deleteLike } from "@/api/like";
 
@@ -217,8 +218,7 @@ export default function BoardDetailPage() {
 
   const handleDelete = async () => {
     await deleteBoard(boardId);
-    sessionStorage.setItem("feed_stale", "1");
-    window.dispatchEvent(new Event("carlog:board-deleted"));
+    markFeedStale(BOARD_DELETED_EVENT);
     router.back();
   };
 
@@ -790,8 +790,7 @@ export default function BoardDetailPage() {
           }}
           onClose={() => setShowEdit(false)}
           onSaved={() => {
-            sessionStorage.setItem("feed_stale", "1");
-            window.dispatchEvent(new Event("carlog:board-saved"));
+            markFeedStale();
             getBoard(boardId).then((data) => {
               if (data) setBoard(data);
             });
