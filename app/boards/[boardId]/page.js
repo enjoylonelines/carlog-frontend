@@ -1,16 +1,28 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useContext } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { AuthContext } from "../../../contexts/AuthContext";
 import CreatePost from "../../components/CreatePost/CreatePost";
-import { getBoard, deleteBoard, getComments, createComment, deleteComment, getReplies, checkFollow, followUser, unfollowUser, getUserProfile } from "../../../api";
+import {
+  getBoard,
+  deleteBoard,
+  getComments,
+  createComment,
+  deleteComment,
+  getReplies,
+  checkFollow,
+  followUser,
+  unfollowUser,
+  getUserProfile,
+} from "../../../api";
 import Image from "next/image";
 import { avatarColor } from "../../utils/avatar";
 import styles from "./page.module.css";
 
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL;
 const mediaUrl = (url) => {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
   return `${API_ORIGIN}${url}`;
 };
 
@@ -27,6 +39,7 @@ function timeAgo(dateStr) {
 export default function BoardDetailPage() {
   const { boardId } = useParams();
   const router = useRouter();
+  const { userId: MY_USER_ID } = useContext(AuthContext);
 
   const [board, setBoard] = useState(null);
   const [comments, setComments] = useState([]);
@@ -41,7 +54,7 @@ export default function BoardDetailPage() {
   const [hasMoreComments, setHasMoreComments] = useState(true);
   const [totalCommentCount, setTotalCommentCount] = useState(0);
 
-  const commentPageRef = useRef(1);
+  const nextCursorRef = useRef(null);
   const isLoadingCommentsRef = useRef(false);
   const commentSentinelRef = useRef(null);
 
@@ -57,7 +70,7 @@ export default function BoardDetailPage() {
   const mediaListRef = useRef(null);
 
   const mediaUrls = board?.mediaUrls || [];
-  const firstImageUrl = mediaUrls.length > 0 ? mediaUrl(mediaUrls[0]) : '/no-image.svg';
+  const firstImageUrl = mediaUrls.length > 0 ? mediaUrl(mediaUrls[0]) : "/no-image.svg";
   const isOwner = board?.userId === MY_USER_ID;
   const boardUserId = board?.userId;
   const isPageLoading = loading || (board && String(board.boardId) !== String(boardId));
@@ -68,31 +81,34 @@ export default function BoardDetailPage() {
     });
   }, []);
 
-  const loadComments = useCallback(async (page, append) => {
-    if (isLoadingCommentsRef.current) return;
-    isLoadingCommentsRef.current = true;
+  const loadComments = useCallback(
+    async (lastCommentId, append) => {
+      if (isLoadingCommentsRef.current) return;
+      isLoadingCommentsRef.current = true;
 
-    const data = await getComments(boardId, page);
-    isLoadingCommentsRef.current = false;
+      const data = await getComments(boardId, lastCommentId);
+      isLoadingCommentsRef.current = false;
 
-    setComments((prev) => {
-      if (!append) return data.comments;
-      const existingIds = new Set(prev.map((c) => c.commentId));
-      return [...prev, ...data.comments.filter((c) => !existingIds.has(c.commentId))];
-    });
-    setHasMoreComments(data.hasNext);
-    if (!append) setTotalCommentCount(data.totalCount ?? 0);
-    commentPageRef.current = page;
-  }, [boardId]);
+      setComments((prev) => {
+        if (!append) return data.comments;
+        const existingIds = new Set(prev.map((c) => c.commentId));
+        return [...prev, ...data.comments.filter((c) => !existingIds.has(c.commentId))];
+      });
+      setHasMoreComments(data.hasNext);
+      nextCursorRef.current = data.nextCursor ?? null;
+      if (!append) setTotalCommentCount(data.totalCount ?? 0);
+    },
+    [boardId],
+  );
 
   useEffect(() => {
-    commentPageRef.current = 1;
-    Promise.all([getBoard(boardId), getComments(boardId, 1)]).then(([boardData, commentData]) => {
+    nextCursorRef.current = null;
+    Promise.all([getBoard(boardId), getComments(boardId, null)]).then(([boardData, commentData]) => {
       setBoard(boardData);
       setComments(commentData.comments);
       setHasMoreComments(commentData.hasNext);
       setTotalCommentCount(commentData.totalCount ?? 0);
-      commentPageRef.current = 1;
+      nextCursorRef.current = commentData.nextCursor ?? null;
       setCurrentMediaIndex(0);
       setLoading(false);
     });
@@ -105,10 +121,10 @@ export default function BoardDetailPage() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !isLoadingCommentsRef.current && hasMoreComments) {
-          loadComments(commentPageRef.current + 1, true);
+          loadComments(nextCursorRef.current, true);
         }
       },
-      { rootMargin: '100px' }
+      { rootMargin: "100px" },
     );
 
     observer.observe(sentinel);
@@ -118,10 +134,12 @@ export default function BoardDetailPage() {
   useEffect(() => {
     if (!boardUserId || isOwner) return;
     let cancelled = false;
-    checkFollow({ userId: MY_USER_ID, targetId: boardUserId }).then(isFollowing => {
+    checkFollow({ userId: MY_USER_ID, targetId: boardUserId }).then((isFollowing) => {
       if (!cancelled) setFollowing(isFollowing);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [boardUserId, isOwner]);
 
   const handleFollow = async () => {
@@ -148,13 +166,10 @@ export default function BoardDetailPage() {
   const moveMedia = (direction) => {
     const list = mediaListRef.current;
     if (!list) return;
-    const nextIndex = Math.min(
-      Math.max(currentMediaIndex + direction, 0),
-      mediaUrls.length - 1
-    );
+    const nextIndex = Math.min(Math.max(currentMediaIndex + direction, 0), mediaUrls.length - 1);
     list.scrollTo({
       left: nextIndex * list.clientWidth,
-      behavior: 'smooth',
+      behavior: "smooth",
     });
     setCurrentMediaIndex(nextIndex);
   };
@@ -183,7 +198,7 @@ export default function BoardDetailPage() {
       setSubmitting(false);
       return;
     }
-    sessionStorage.setItem('feed_stale', '1');
+    sessionStorage.setItem("feed_stale", "1");
 
     const newEntry = {
       commentId: result.commentId,
@@ -217,7 +232,7 @@ export default function BoardDetailPage() {
 
   const handleCommentDelete = async (commentId) => {
     await deleteComment(commentId);
-    sessionStorage.setItem('feed_stale', '1');
+    sessionStorage.setItem("feed_stale", "1");
     setComments((prev) => prev.filter((c) => c.commentId !== commentId));
     setTotalCommentCount((prev) => Math.max(0, prev - 1));
     // 대댓글 캐시에서도 제거
@@ -338,11 +353,8 @@ export default function BoardDetailPage() {
               <span className={styles.postTime}>{timeAgo(board.createdDate)}</span>
             </div>
             {!isOwner && (
-              <button
-                className={`${styles.followBtn} ${following ? styles.following : ''}`}
-                onClick={handleFollow}
-              >
-                {following ? '팔로잉' : '팔로우'}
+              <button className={`${styles.followBtn} ${following ? styles.following : ""}`} onClick={handleFollow}>
+                {following ? "팔로잉" : "팔로우"}
               </button>
             )}
           </div>
@@ -354,7 +366,16 @@ export default function BoardDetailPage() {
               <div className={styles.mediaList} ref={mediaListRef} onScroll={handleMediaScroll}>
                 {mediaUrls.map((url, index) => (
                   <div className={styles.imageWrap} key={`${url}-${index}`}>
-                    <Image src={mediaUrl(url)} alt={`게시물 이미지 ${index + 1}`} className={styles.image} fill unoptimized onError={(e) => { e.currentTarget.src = '/no-image.svg'; }} />
+                    <Image
+                      src={mediaUrl(url)}
+                      alt={`게시물 이미지 ${index + 1}`}
+                      className={styles.image}
+                      fill
+                      unoptimized
+                      onError={(e) => {
+                        e.currentTarget.src = "/no-image.svg";
+                      }}
+                    />
                   </div>
                 ))}
               </div>
@@ -367,7 +388,16 @@ export default function BoardDetailPage() {
                     disabled={currentMediaIndex === 0}
                     aria-label="Previous image"
                   >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <path d="M15 18l-6-6 6-6" />
                     </svg>
                   </button>
@@ -378,7 +408,16 @@ export default function BoardDetailPage() {
                     disabled={currentMediaIndex === mediaUrls.length - 1}
                     aria-label="Next image"
                   >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <path d="M9 18l6-6-6-6" />
                     </svg>
                   </button>
@@ -386,7 +425,6 @@ export default function BoardDetailPage() {
               )}
             </div>
           )}
-
 
           {/* 태그 */}
           {board.hashtags && board.hashtags.length > 0 && (
@@ -531,7 +569,7 @@ export default function BoardDetailPage() {
         )}
         <div className={styles.commentBarInner}>
           <div className={styles.commentBarAvatar} style={{ background: avatarColor(MY_USER_ID) }}>
-            카
+            {myUsername ? myUsername[0].toUpperCase() : "?"}
           </div>
           <input
             ref={commentInputRef}

@@ -1,15 +1,14 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { AuthContext } from '../../../contexts/AuthContext';
 import { getUserProfile, searchBoards } from '../../../api';
 import ProfileEditModal from '../ProfileEditModal/ProfileEditModal';
 import styles from './ProfileView.module.css';
 
-const MY_USER_ID = 1;
-
 const MOCK_PROFILE = {
-  userId: MY_USER_ID,
+  userId: null,
   username: '카로그왕',
   bio: '차를 사랑하는 사람입니다. 주말마다 드라이브 🚗\n자동차 관련 정보 공유해요!',
   avatarColor: '#E03131',
@@ -27,6 +26,7 @@ const GridIcon = () => (
 
 export default function ProfileView() {
   const router = useRouter();
+  const { userId: myUserId } = useContext(AuthContext);
   const [profile, setProfile] = useState(MOCK_PROFILE);
   const [posts, setPosts] = useState([]);
   const [showEdit, setShowEdit] = useState(false);
@@ -41,7 +41,7 @@ export default function ProfileView() {
     if (isLoadingRef.current) return;
     isLoadingRef.current = true;
 
-    const data = await searchBoards({ pageNo, userId: MY_USER_ID });
+    const data = await searchBoards({ pageNo, userId: myUserId });
     isLoadingRef.current = false;
 
     const boards = data?.boards;
@@ -59,12 +59,13 @@ export default function ProfileView() {
   }, []);
 
   useEffect(() => {
-    getUserProfile(MY_USER_ID).then((data) => {
+    if (!myUserId) return;
+    getUserProfile(myUserId).then((data) => {
       if (data && data.username) setProfile((prev) => ({ ...prev, ...data }));
     });
     pageRef.current = 1;
     loadPosts(1, false);
-  }, [loadPosts]);
+  }, [myUserId, loadPosts]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -88,7 +89,7 @@ export default function ProfileView() {
       {showEdit && (
         <ProfileEditModal
           profile={profile}
-          userId={MY_USER_ID}
+          userId={myUserId}
           onClose={() => setShowEdit(false)}
           onSaved={(updated) => setProfile((prev) => ({ ...prev, ...updated }))}
         />
@@ -132,7 +133,7 @@ export default function ProfileView() {
         <div className={styles.actions}>
           <button className={styles.actionBtn} onClick={() => setShowEdit(true)}>프로필 편집</button>
           <button className={styles.actionBtn} onClick={() => {
-          navigator.clipboard.writeText(`${window.location.origin}/users/${MY_USER_ID}`);
+          navigator.clipboard.writeText(`${window.location.origin}/users/${myUserId}`);
           setToast(true);
           setTimeout(() => setToast(false), 2000);
         }}>프로필 공유</button>

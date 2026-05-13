@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/navigation';
+import { AuthContext } from '../../../contexts/AuthContext';
 import { getUserProfile, checkFollow, followUser, unfollowUser } from '../../../api';
 import { searchBoards } from '../../../api';
 import client from '../../../api/client';
@@ -9,10 +10,9 @@ import { avatarColor } from '../../utils/avatar';
 import { followCache } from '../../utils/followCache';
 import styles from './UserProfileView.module.css';
 
-const MY_USER_ID = 1;
-
 export default function UserProfileView({ userId }) {
   const router = useRouter();
+  const { userId: MY_USER_ID } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [following, setFollowing] = useState(() => followCache[userId] ?? null);
   const [followLoading, setFollowLoading] = useState(false);
