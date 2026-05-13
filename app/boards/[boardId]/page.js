@@ -18,6 +18,7 @@ import {
 import Image from "next/image";
 import { avatarColor } from "../../utils/avatar";
 import styles from "./page.module.css";
+import { createLike, deleteLike } from "@/api/like";
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL;
 const mediaUrl = (url) => {
@@ -53,6 +54,8 @@ export default function BoardDetailPage() {
   const [myUsername, setMyUsername] = useState("");
   const [hasMoreComments, setHasMoreComments] = useState(true);
   const [totalCommentCount, setTotalCommentCount] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const [likes, setLikes] = useState(0);
 
   const nextCursorRef = useRef(null);
   const isLoadingCommentsRef = useRef(false);
@@ -70,10 +73,12 @@ export default function BoardDetailPage() {
   const mediaListRef = useRef(null);
 
   const mediaUrls = board?.mediaUrls || [];
-  const firstImageUrl = mediaUrls.length > 0 ? mediaUrl(mediaUrls[0]) : "/no-image.svg";
+  const firstImageUrl =
+    mediaUrls.length > 0 ? mediaUrl(mediaUrls[0]) : "/no-image.svg";
   const isOwner = board?.userId === MY_USER_ID;
   const boardUserId = board?.userId;
-  const isPageLoading = loading || (board && String(board.boardId) !== String(boardId));
+  const isPageLoading =
+    loading || (board && String(board.boardId) !== String(boardId));
 
   useEffect(() => {
     getUserProfile(MY_USER_ID).then((data) => {
@@ -92,7 +97,10 @@ export default function BoardDetailPage() {
       setComments((prev) => {
         if (!append) return data.comments;
         const existingIds = new Set(prev.map((c) => c.commentId));
-        return [...prev, ...data.comments.filter((c) => !existingIds.has(c.commentId))];
+        return [
+          ...prev,
+          ...data.comments.filter((c) => !existingIds.has(c.commentId)),
+        ];
       });
       setHasMoreComments(data.hasNext);
       nextCursorRef.current = data.nextCursor ?? null;
@@ -103,15 +111,19 @@ export default function BoardDetailPage() {
 
   useEffect(() => {
     nextCursorRef.current = null;
-    Promise.all([getBoard(boardId), getComments(boardId, null)]).then(([boardData, commentData]) => {
-      setBoard(boardData);
-      setComments(commentData.comments);
-      setHasMoreComments(commentData.hasNext);
-      setTotalCommentCount(commentData.totalCount ?? 0);
-      nextCursorRef.current = commentData.nextCursor ?? null;
-      setCurrentMediaIndex(0);
-      setLoading(false);
-    });
+    Promise.all([getBoard(boardId), getComments(boardId, null)]).then(
+      ([boardData, commentData]) => {
+        setBoard(boardData);
+        setLiked(boardData.isLike === 1);
+        setLikes(boardData.likecount);
+        setComments(commentData.comments);
+        setHasMoreComments(commentData.hasNext);
+        setTotalCommentCount(commentData.totalCount ?? 0);
+        nextCursorRef.current = commentData.nextCursor ?? null;
+        setCurrentMediaIndex(0);
+        setLoading(false);
+      },
+    );
   }, [boardId, loadComments]);
 
   useEffect(() => {
@@ -120,7 +132,11 @@ export default function BoardDetailPage() {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isLoadingCommentsRef.current && hasMoreComments) {
+        if (
+          entries[0].isIntersecting &&
+          !isLoadingCommentsRef.current &&
+          hasMoreComments
+        ) {
           loadComments(nextCursorRef.current, true);
         }
       },
@@ -134,9 +150,11 @@ export default function BoardDetailPage() {
   useEffect(() => {
     if (!boardUserId || isOwner) return;
     let cancelled = false;
-    checkFollow({ userId: MY_USER_ID, targetId: boardUserId }).then((isFollowing) => {
-      if (!cancelled) setFollowing(isFollowing);
-    });
+    checkFollow({ userId: MY_USER_ID, targetId: boardUserId }).then(
+      (isFollowing) => {
+        if (!cancelled) setFollowing(isFollowing);
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -151,6 +169,24 @@ export default function BoardDetailPage() {
       await unfollowUser({ userId: MY_USER_ID, targetId: board.userId });
     }
   };
+  // 좋아요 이벤트 함수
+  const handleLike = async () => {
+    try {
+      if (liked) {
+        const res = await deleteLike(boardId);
+
+        setLiked(res.isLiked === 1);
+        setLikes(res.likeCount);
+      } else {
+        const res = await createLike(boardId);
+
+        setLiked(res.isLiked === 1);
+        setLikes(res.likeCount);
+      }
+    } catch (err) {
+      console.error("좋아요 처리 실패", err);
+    }
+  };
 
   useEffect(() => {
     mediaListRef.current?.scrollTo({ left: 0 });
@@ -160,13 +196,18 @@ export default function BoardDetailPage() {
     const list = mediaListRef.current;
     if (!list) return;
     const nextIndex = Math.round(list.scrollLeft / list.clientWidth);
-    setCurrentMediaIndex(Math.min(Math.max(nextIndex, 0), mediaUrls.length - 1));
+    setCurrentMediaIndex(
+      Math.min(Math.max(nextIndex, 0), mediaUrls.length - 1),
+    );
   };
 
   const moveMedia = (direction) => {
     const list = mediaListRef.current;
     if (!list) return;
-    const nextIndex = Math.min(Math.max(currentMediaIndex + direction, 0), mediaUrls.length - 1);
+    const nextIndex = Math.min(
+      Math.max(currentMediaIndex + direction, 0),
+      mediaUrls.length - 1,
+    );
     list.scrollTo({
       left: nextIndex * list.clientWidth,
       behavior: "smooth",
@@ -212,7 +253,13 @@ export default function BoardDetailPage() {
 
     if (currentReplyingTo) {
       const parentId = currentReplyingTo.commentId;
-      setComments((prev) => prev.map((c) => (c.commentId === parentId ? { ...c, replyCount: (c.replyCount || 0) + 1 } : c)));
+      setComments((prev) =>
+        prev.map((c) =>
+          c.commentId === parentId
+            ? { ...c, replyCount: (c.replyCount || 0) + 1 }
+            : c,
+        ),
+      );
       setRepliesCache((prev) => ({
         ...prev,
         [parentId]: [...(prev[parentId] || []), newEntry],
@@ -249,7 +296,13 @@ export default function BoardDetailPage() {
       ...prev,
       [parentId]: (prev[parentId] || []).filter((r) => r.commentId !== replyId),
     }));
-    setComments((prev) => prev.map((c) => (c.commentId === parentId ? { ...c, replyCount: Math.max(0, (c.replyCount || 1) - 1) } : c)));
+    setComments((prev) =>
+      prev.map((c) =>
+        c.commentId === parentId
+          ? { ...c, replyCount: Math.max(0, (c.replyCount || 1) - 1) }
+          : c,
+      ),
+    );
     setTotalCommentCount((prev) => Math.max(0, prev - 1));
   };
 
@@ -282,7 +335,10 @@ export default function BoardDetailPage() {
   };
 
   const startReply = (comment) => {
-    setReplyingTo({ commentId: comment.commentId, username: comment.username || `user${comment.userId}` });
+    setReplyingTo({
+      commentId: comment.commentId,
+      username: comment.username || `user${comment.userId}`,
+    });
     setTimeout(() => commentInputRef.current?.focus(), 50);
   };
 
@@ -316,21 +372,51 @@ export default function BoardDetailPage() {
         {/* 상단 헤더 */}
         <div className={styles.topBar}>
           <button className={styles.backBtn} onClick={() => router.back()}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
               <path d="M19 12H5M12 5l-7 7 7 7" />
             </svg>
           </button>
           <span className={styles.topTitle}>게시물</span>
           {isOwner && (
             <div className={styles.actions}>
-              <button className={styles.actionBtn} onClick={() => setShowEdit(true)}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <button
+                className={styles.actionBtn}
+                onClick={() => setShowEdit(true)}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
               </button>
-              <button className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={() => setShowDeleteConfirm(true)}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <button
+                className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
                   <polyline points="3 6 5 6 21 6" />
                   <path d="M19 6l-1 14H6L5 6" />
                   <path d="M10 11v6M14 11v6" />
@@ -345,15 +431,25 @@ export default function BoardDetailPage() {
         <div className={styles.content}>
           {/* 작성자 정보 */}
           <div className={styles.authorRow}>
-            <div className={styles.avatar} style={{ background: avatarColor(board.userId) }}>
+            <div
+              className={styles.avatar}
+              style={{ background: avatarColor(board.userId) }}
+            >
               {(board.username || "U")[0].toUpperCase()}
             </div>
             <div className={styles.authorMeta}>
-              <span className={styles.authorName}>{board.username || `user${board.userId}`}</span>
-              <span className={styles.postTime}>{timeAgo(board.createdDate)}</span>
+              <span className={styles.authorName}>
+                {board.username || `user${board.userId}`}
+              </span>
+              <span className={styles.postTime}>
+                {timeAgo(board.createdDate)}
+              </span>
             </div>
             {!isOwner && (
-              <button className={`${styles.followBtn} ${following ? styles.following : ""}`} onClick={handleFollow}>
+              <button
+                className={`${styles.followBtn} ${following ? styles.following : ""}`}
+                onClick={handleFollow}
+              >
                 {following ? "팔로잉" : "팔로우"}
               </button>
             )}
@@ -363,7 +459,11 @@ export default function BoardDetailPage() {
 
           {mediaUrls.length > 0 && (
             <div className={styles.mediaFrame}>
-              <div className={styles.mediaList} ref={mediaListRef} onScroll={handleMediaScroll}>
+              <div
+                className={styles.mediaList}
+                ref={mediaListRef}
+                onScroll={handleMediaScroll}
+              >
                 {mediaUrls.map((url, index) => (
                   <div className={styles.imageWrap} key={`${url}-${index}`}>
                     <Image
@@ -442,15 +542,43 @@ export default function BoardDetailPage() {
 
           {/* 통계 */}
           <div className={styles.stats}>
+            {/* 좋아요 버튼  */}
+            <button className={styles.stat} onClick={handleLike}>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill={liked ? "#ef4444" : "none"}
+                stroke={liked ? "#ef4444" : "currentColor"}
+                strokeWidth="2"
+              >
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              {likes.toLocaleString()}
+            </button>
             <span className={styles.stat}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
               {(board.hitcount || 0).toLocaleString()}
             </span>
             <span className={styles.stat}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               {totalCommentCount}
@@ -460,7 +588,8 @@ export default function BoardDetailPage() {
           {/* 댓글 목록 */}
           <div className={styles.commentSection}>
             <div className={styles.commentHeader}>
-              댓글 <span className={styles.commentCount}>{totalCommentCount}</span>
+              댓글{" "}
+              <span className={styles.commentCount}>{totalCommentCount}</span>
             </div>
 
             {comments.length === 0 ? (
@@ -470,21 +599,35 @@ export default function BoardDetailPage() {
                 <div key={c.commentId}>
                   {/* 부모 댓글 */}
                   <div className={styles.commentItem}>
-                    <div className={styles.commentAvatar} style={{ background: avatarColor(c.userId) }}>
+                    <div
+                      className={styles.commentAvatar}
+                      style={{ background: avatarColor(c.userId) }}
+                    >
                       {(c.username || "U")[0].toUpperCase()}
                     </div>
                     <div className={styles.commentBody}>
                       <div className={styles.commentTop}>
-                        <span className={styles.commentAuthor}>{c.username || `user${c.userId}`}</span>
-                        <span className={styles.commentTime}>{timeAgo(c.createdAt)}</span>
+                        <span className={styles.commentAuthor}>
+                          {c.username || `user${c.userId}`}
+                        </span>
+                        <span className={styles.commentTime}>
+                          {timeAgo(c.createdAt)}
+                        </span>
                       </div>
                       <p className={styles.commentText}>{c.content}</p>
                       <div className={styles.commentActions}>
-                        <button className={styles.replyBtn} onClick={() => startReply(c)}>
+                        <button
+                          className={styles.replyBtn}
+                          onClick={() => startReply(c)}
+                        >
                           답글 달기
                         </button>
-                        {(c.replyCount > 0 || repliesCache[c.commentId]?.length > 0) && (
-                          <button className={styles.toggleRepliesBtn} onClick={() => handleToggleReplies(c.commentId)}>
+                        {(c.replyCount > 0 ||
+                          repliesCache[c.commentId]?.length > 0) && (
+                          <button
+                            className={styles.toggleRepliesBtn}
+                            onClick={() => handleToggleReplies(c.commentId)}
+                          >
                             {loadingReplies.has(c.commentId)
                               ? "로딩 중..."
                               : expandedReplies.has(c.commentId)
@@ -495,7 +638,10 @@ export default function BoardDetailPage() {
                       </div>
                     </div>
                     {c.userId === MY_USER_ID && (
-                      <button className={styles.commentDeleteBtn} onClick={() => handleCommentDelete(c.commentId)}>
+                      <button
+                        className={styles.commentDeleteBtn}
+                        onClick={() => handleCommentDelete(c.commentId)}
+                      >
                         <svg
                           width="14"
                           height="14"
@@ -516,19 +662,34 @@ export default function BoardDetailPage() {
                   {expandedReplies.has(c.commentId) && (
                     <div className={styles.repliesList}>
                       {(repliesCache[c.commentId] || []).map((r) => (
-                        <div key={r.commentId} className={`${styles.commentItem} ${styles.replyItem}`}>
-                          <div className={styles.commentAvatar} style={{ background: avatarColor(r.userId) }}>
+                        <div
+                          key={r.commentId}
+                          className={`${styles.commentItem} ${styles.replyItem}`}
+                        >
+                          <div
+                            className={styles.commentAvatar}
+                            style={{ background: avatarColor(r.userId) }}
+                          >
                             {(r.username || "U")[0].toUpperCase()}
                           </div>
                           <div className={styles.commentBody}>
                             <div className={styles.commentTop}>
-                              <span className={styles.commentAuthor}>{r.username || `user${r.userId}`}</span>
-                              <span className={styles.commentTime}>{timeAgo(r.createdAt)}</span>
+                              <span className={styles.commentAuthor}>
+                                {r.username || `user${r.userId}`}
+                              </span>
+                              <span className={styles.commentTime}>
+                                {timeAgo(r.createdAt)}
+                              </span>
                             </div>
                             <p className={styles.commentText}>{r.content}</p>
                           </div>
                           {r.userId === MY_USER_ID && (
-                            <button className={styles.commentDeleteBtn} onClick={() => handleReplyDelete(r.commentId, c.commentId)}>
+                            <button
+                              className={styles.commentDeleteBtn}
+                              onClick={() =>
+                                handleReplyDelete(r.commentId, c.commentId)
+                              }
+                            >
                               <svg
                                 width="14"
                                 height="14"
@@ -552,7 +713,9 @@ export default function BoardDetailPage() {
             )}
           </div>
 
-          {hasMoreComments && <div ref={commentSentinelRef} style={{ height: 1 }} />}
+          {hasMoreComments && (
+            <div ref={commentSentinelRef} style={{ height: 1 }} />
+          )}
           <div className={styles.commentInputSpacer} />
         </div>
       </div>
@@ -561,20 +724,29 @@ export default function BoardDetailPage() {
       <div className={styles.commentBar}>
         {replyingTo && (
           <div className={styles.replyingToBar}>
-            <span className={styles.replyingToText}>@{replyingTo.username}에게 답글 작성 중</span>
+            <span className={styles.replyingToText}>
+              @{replyingTo.username}에게 답글 작성 중
+            </span>
             <button className={styles.cancelReplyBtn} onClick={cancelReply}>
               ✕
             </button>
           </div>
         )}
         <div className={styles.commentBarInner}>
-          <div className={styles.commentBarAvatar} style={{ background: avatarColor(MY_USER_ID) }}>
+          <div
+            className={styles.commentBarAvatar}
+            style={{ background: avatarColor(MY_USER_ID) }}
+          >
             {myUsername ? myUsername[0].toUpperCase() : "?"}
           </div>
           <input
             ref={commentInputRef}
             className={styles.commentInput}
-            placeholder={replyingTo ? `@${replyingTo.username}에게 답글...` : "댓글 추가..."}
+            placeholder={
+              replyingTo
+                ? `@${replyingTo.username}에게 답글...`
+                : "댓글 추가..."
+            }
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             onKeyDown={(e) => {
@@ -590,7 +762,15 @@ export default function BoardDetailPage() {
             onClick={handleCommentSubmit}
             disabled={!commentText.trim() || submitting}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
@@ -601,7 +781,11 @@ export default function BoardDetailPage() {
       {/* 수정 시트 */}
       {showEdit && (
         <CreatePost
-          initialPost={{ ...board, tags: board.hashtags || [], imageUrl: firstImageUrl }}
+          initialPost={{
+            ...board,
+            tags: board.hashtags || [],
+            imageUrl: firstImageUrl,
+          }}
           onClose={() => setShowEdit(false)}
           onSaved={() => {
             getBoard(boardId).then((data) => {
@@ -613,11 +797,20 @@ export default function BoardDetailPage() {
 
       {/* 삭제 확인 */}
       {showDeleteConfirm && (
-        <div className={styles.confirmOverlay} onClick={() => setShowDeleteConfirm(false)}>
-          <div className={styles.confirmBox} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={styles.confirmOverlay}
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div
+            className={styles.confirmBox}
+            onClick={(e) => e.stopPropagation()}
+          >
             <p className={styles.confirmText}>게시물을 삭제할까요?</p>
             <div className={styles.confirmActions}>
-              <button className={styles.confirmCancel} onClick={() => setShowDeleteConfirm(false)}>
+              <button
+                className={styles.confirmCancel}
+                onClick={() => setShowDeleteConfirm(false)}
+              >
                 취소
               </button>
               <button className={styles.confirmDelete} onClick={handleDelete}>

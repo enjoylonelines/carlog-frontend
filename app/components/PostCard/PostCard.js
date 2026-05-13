@@ -7,6 +7,7 @@ import { AuthContext } from "../../../contexts/AuthContext";
 import { checkFollow, followUser, unfollowUser } from "../../../api";
 import { avatarColor as getAvatarColor } from "../../utils/avatar";
 import { followCache } from "../../utils/followCache";
+import { createLike, deleteLike } from "@/api/like";
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL;
 const mediaUrl = (url) => {
@@ -45,7 +46,7 @@ export default function PostCard({ post }) {
     imageUrl,
     mediaUrls,
     commentCount,
-    isLiked,
+    isLike,
     likeCount,
   } = post;
   const images = mediaUrls?.length ? mediaUrls : imageUrl ? [imageUrl] : [];
@@ -57,19 +58,21 @@ export default function PostCard({ post }) {
   const [following, setFollowing] = useState(() => followCache[userId] ?? null);
 
   // 좋아요
-  const [liked, setLiked] = useState(() => (isLiked ?? 0) === 1);
+  const [liked, setLiked] = useState(() => (isLike ?? 0) === 1);
   const [likes, setLikes] = useState(() => likeCount ?? 0);
 
   useEffect(() => {
     if (isOwnPost) return;
     if (followCache[userId] !== undefined) return;
     let cancelled = false;
-    checkFollow({ userId: MY_USER_ID, targetId: userId }).then((isFollowing) => {
-      if (!cancelled) {
-        followCache[userId] = isFollowing;
-        setFollowing(isFollowing);
-      }
-    });
+    checkFollow({ userId: MY_USER_ID, targetId: userId }).then(
+      (isFollowing) => {
+        if (!cancelled) {
+          followCache[userId] = isFollowing;
+          setFollowing(isFollowing);
+        }
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -97,7 +100,10 @@ export default function PostCard({ post }) {
     event.stopPropagation();
     const list = mediaListRef.current;
     if (!list) return;
-    const nextIndex = Math.min(Math.max(currentMediaIndex + direction, 0), images.length - 1);
+    const nextIndex = Math.min(
+      Math.max(currentMediaIndex + direction, 0),
+      images.length - 1,
+    );
     list.scrollTo({
       left: nextIndex * list.clientWidth,
       behavior: "smooth",
@@ -111,15 +117,13 @@ export default function PostCard({ post }) {
 
     try {
       if (liked) {
-        const res = await likeApi.deleteLike(boardId);
-
-        setLiked((res.data.isLiked ?? 0) === 1);
-        setLikes(res.data.likeCount ?? 0);
+        const res = await deleteLike(boardId);
+        setLiked((res?.isLiked ?? 0) === 1);
+        setLikes(res?.likeCount ?? 0);
       } else {
-        const res = await likeApi.createLike(boardId);
-
-        setLiked((res.data.isLiked ?? 0) === 1);
-        setLikes(res.data.likeCount ?? 0);
+        const data = await createLike(boardId);
+        setLiked((data?.isLiked ?? 0) === 1);
+        setLikes(data?.likeCount ?? 0);
       }
     } catch (err) {
       console.error("좋아요 처리 실패", err);
@@ -131,13 +135,24 @@ export default function PostCard({ post }) {
       <div className={styles.header}>
         <div
           className={styles.avatarWrap}
-          onClick={() => router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)}
+          onClick={() =>
+            router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)
+          }
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)}
+          onKeyDown={(e) =>
+            e.key === "Enter" &&
+            router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)
+          }
         >
           {profileImageUrl ? (
-            <Image src={profileImageUrl} alt={username} width={40} height={40} className={styles.avatarImg} />
+            <Image
+              src={profileImageUrl}
+              alt={username}
+              width={40}
+              height={40}
+              className={styles.avatarImg}
+            />
           ) : (
             <div className={styles.avatar} style={{ background: color }}>
               {(username || "U")[0].toUpperCase()}
@@ -146,16 +161,24 @@ export default function PostCard({ post }) {
         </div>
         <div
           className={styles.meta}
-          onClick={() => router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)}
+          onClick={() =>
+            router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)
+          }
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)}
+          onKeyDown={(e) =>
+            e.key === "Enter" &&
+            router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)
+          }
         >
           <span className={styles.username}>{username || "알 수 없음"}</span>
           <span className={styles.time}>{timeAgo(createdAt)}</span>
         </div>
         {!isOwnPost && following !== null && (
-          <button className={`${styles.followBtn} ${following ? styles.following : ""}`} onClick={handleFollow}>
+          <button
+            className={`${styles.followBtn} ${following ? styles.following : ""}`}
+            onClick={handleFollow}
+          >
             {following ? "팔로잉" : "팔로우"}
           </button>
         )}
@@ -166,11 +189,17 @@ export default function PostCard({ post }) {
         onClick={() => router.push(`/boards/${boardId}`)}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === "Enter" && router.push(`/boards/${boardId}`)}
+        onKeyDown={(e) =>
+          e.key === "Enter" && router.push(`/boards/${boardId}`)
+        }
       >
         {images.length > 0 && (
           <div className={styles.mediaFrame}>
-            <div className={styles.mediaList} ref={mediaListRef} onScroll={handleMediaScroll}>
+            <div
+              className={styles.mediaList}
+              ref={mediaListRef}
+              onScroll={handleMediaScroll}
+            >
               {images.map((url, index) => (
                 <div className={styles.imageWrap} key={`${url}-${index}`}>
                   <Image
@@ -267,24 +296,44 @@ export default function PostCard({ post }) {
             </p>
           )}
 
-          <button className={styles.stat} onClick={handleLike}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-            </svg>
-
-            {likes.toLocaleString()}
-          </button>
-
           <div className={styles.stats}>
+            {/* 좋아요 버튼  */}
+            <button className={styles.stat} onClick={handleLike}>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill={liked ? "#ef4444" : "none"}
+                stroke={liked ? "#ef4444" : "currentColor"}
+                strokeWidth="2"
+              >
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              {likes.toLocaleString()}
+            </button>
             <span className={styles.stat}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
               {(hitcount || 0).toLocaleString()}
             </span>
             <span className={styles.stat}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               {(commentCount || 0).toLocaleString()}
