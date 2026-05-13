@@ -22,7 +22,6 @@ export default function EditAccountPage() {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -31,6 +30,9 @@ export default function EditAccountPage() {
   const [emailStatus, setEmailStatus] = useState(null);
   const [originalLoginId, setOriginalLoginId] = useState('');
   const [originalEmail, setOriginalEmail] = useState('');
+
+  // 확인 비밀번호 에러
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
   useEffect(() => {
     const storedId = localStorage.getItem('userId');
@@ -54,51 +56,103 @@ export default function EditAccountPage() {
   }, []);
 
   const handleCheckLoginId = async () => {
-    if (!loginId.trim()) return;
+    if (!loginId.trim()) {
+      setLoginIdError('아이디를 입력해주세요.');
+      return;
+    }
     if (loginId === originalLoginId) {
       setLoginIdStatus('ok');
+      setLoginIdError('');
       return;
     }
     const res = await checkLoginIdAvailable(userId, loginId);
-    setLoginIdStatus(res?.duplicate ? 'dup' : 'ok');
+    const dup = res?.duplicate;
+    setLoginIdStatus(dup ? 'dup' : 'ok');
+    setLoginIdError(dup ? '이미 사용 중인 아이디입니다.' : '');
   };
 
   const handleCheckEmail = async () => {
-    if (!email.trim()) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim()) {
+      setEmailError('이메일을 입력해주세요.');
+      return;
+    }
+    if (!emailRegex.test(email)) {
+      setEmailError('올바른 이메일 형식이 아닙니다.');
+      return;
+    }
     if (email === originalEmail) {
       setEmailStatus('ok');
+      setEmailError('');
       return;
     }
     const res = await checkEmailAvailable(userId, email);
-    setEmailStatus(res?.duplicate ? 'dup' : 'ok');
+    const dup = res?.duplicate;
+    setEmailStatus(dup ? 'dup' : 'ok');
+    setEmailError(dup ? '이미 사용 중인 이메일입니다.' : '');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setSuccess('');
 
-    if (!loginId.trim() || !email.trim() || !username.trim()) {
-      setError('아이디, 이메일, 닉네임은 필수 항목입니다.');
-      return;
-    }
-    if (loginId !== originalLoginId && loginIdStatus !== 'ok') {
-      setError('아이디 중복 확인을 해주세요.');
-      return;
-    }
-    if (email !== originalEmail && emailStatus !== 'ok') {
-      setError('이메일 중복 확인을 해주세요.');
-      return;
-    }
-    if (newPassword && newPassword !== confirmPassword) {
-      setError('새 비밀번호와 확인 비밀번호가 일치하지 않습니다.');
-      return;
-    }
-    if (newPassword && !currentPassword) {
-      setError('비밀번호를 변경하려면 현재 비밀번호를 입력해주세요.');
-      return;
+    // 클릭 시 전체 유효성 검사
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let hasError = false;
+
+    if (!loginId.trim()) {
+      setLoginIdError('아이디를 입력해주세요.');
+      hasError = true;
+    } else if (loginIdStatus === 'dup') {
+      setLoginIdError('이미 사용 중인 아이디입니다.');
+      hasError = true;
+    } else if (loginId !== originalLoginId && loginIdStatus !== 'ok') {
+      setLoginIdError('중복 확인이 필요합니다.');
+      hasError = true;
+    } else {
+      setLoginIdError('');
     }
 
+    if (!email.trim()) {
+      setEmailError('이메일을 입력해주세요.');
+      hasError = true;
+    } else if (!emailRegex.test(email)) {
+      setEmailError('올바른 이메일 형식이 아닙니다.');
+      hasError = true;
+    } else if (emailStatus === 'dup') {
+      setEmailError('이미 사용 중인 이메일입니다.');
+      hasError = true;
+    } else if (email !== originalEmail && emailStatus !== 'ok') {
+      setEmailError('중복 확인이 필요합니다.');
+      hasError = true;
+    } else {
+      setEmailError('');
+    }
+
+    if (!username.trim()) {
+      setUsernameError('닉네임을 입력해주세요.');
+      hasError = true;
+    } else {
+      setUsernameError('');
+    }
+
+    if (newPassword && !currentPassword) {
+      setCurrentPasswordError('현재 비밀번호를 입력해주세요.');
+      hasError = true;
+    } else {
+      setCurrentPasswordError('');
+    }
+
+    if (newPassword && newPassword !== confirmPassword) {
+      setConfirmPasswordError('비밀번호가 일치하지 않습니다.');
+      hasError = true;
+    } else {
+      setConfirmPasswordError('');
+    }
+
+    if (hasError) return;
+
+    setError('');
     setSubmitting(true);
     try {
       const payload = { loginId, email, username, bio };
@@ -203,39 +257,28 @@ export default function EditAccountPage() {
             <div className={styles.sectionTitle}>비밀번호 변경 (선택)</div>
 
             <div className={styles.field}>
-              <label className={styles.label}>현재 비밀번호</label>
-              <input
-                className={styles.input}
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                autoComplete="current-password"
-                placeholder="변경 시에만 입력"
-              />
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label}>새 비밀번호</label>
+              <label className={styles.label}>변경할 비밀번호</label>
               <input
                 className={styles.input}
                 type="password"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={(e) => { setNewPassword(e.target.value); setConfirmPasswordError(''); }}
                 autoComplete="new-password"
                 placeholder="변경 시에만 입력"
               />
             </div>
             <div className={styles.field}>
-              <label className={styles.label}>새 비밀번호 확인</label>
+              <label className={styles.label}>비밀번호 확인</label>
               <input
-                className={`${styles.input} ${confirmPassword && newPassword !== confirmPassword ? styles.inputErr : ''}`}
+                className={`${styles.input} ${confirmPasswordError ? styles.inputErr : ''}`}
                 type="password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => { setConfirmPassword(e.target.value); setConfirmPasswordError(''); }}
                 autoComplete="new-password"
                 placeholder="변경 시에만 입력"
               />
-              {confirmPassword && newPassword !== confirmPassword && (
-                <span className={styles.msgErr}>비밀번호가 일치하지 않습니다.</span>
+              {confirmPasswordError && (
+                <span className={styles.msgErr}>{confirmPasswordError}</span>
               )}
             </div>
           </div>
