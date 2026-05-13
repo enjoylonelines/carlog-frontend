@@ -1,6 +1,28 @@
 'use client';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { NotificationContext } from '../../../contexts/NotificationContext';
+import { avatarColor } from '../../utils/avatar';
 import styles from './NotificationsView.module.css';
+
+function NotifAvatar({ src, fallbackColor, username }) {
+  const [errSrc, setErrSrc] = useState(null);
+  if (src && src !== errSrc) {
+    return (
+      <img
+        src={src}
+        alt={username}
+        className={styles.avatarImg}
+        onError={() => setErrSrc(src)}
+      />
+    );
+  }
+  return (
+    <div className={styles.avatar} style={{ background: fallbackColor }}>
+      {username[0].toUpperCase()}
+    </div>
+  );
+}
 
 function timeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr)) / 1000;
@@ -24,76 +46,58 @@ const CommentBadge = () => (
 );
 
 const TYPE_META = {
-  FOLLOW:  { label: '팔로우',  badgeBg: '#3897F0', Badge: FollowBadge },
-  COMMENT: { label: '댓글',    badgeBg: '#E03131', Badge: CommentBadge },
+  FOLLOW:  { label: '팔로우', badgeBg: '#3897F0', Badge: FollowBadge, message: '회원님을 팔로우하기 시작했습니다.' },
+  COMMENT: { label: '댓글',   badgeBg: '#E03131', Badge: CommentBadge, message: '댓글을 남겼습니다.' },
 };
 
-const now = Date.now();
-const MOCK_NOTIFICATIONS = [
-  {
-    id: 1, type: 'FOLLOW',
-    actorUsername: 'speedking_kim', actorColor: '#E03131',
-    message: '회원님을 팔로우하기 시작했습니다.',
-    createdAt: new Date(now - 5 * 60 * 1000).toISOString(),
-    isRead: false,
-  },
-  {
-    id: 2, type: 'COMMENT',
-    actorUsername: 'porsche_diary', actorColor: '#45B7D1',
-    message: '댓글을 남겼습니다: "정말 멋진 차네요! 저도 드라이브 가고 싶어지네요 😍"',
-    createdAt: new Date(now - 32 * 60 * 1000).toISOString(),
-    isRead: false,
-  },
-  {
-    id: 3, type: 'FOLLOW',
-    actorUsername: 'ev_pioneer_choi', actorColor: '#96CEB4',
-    message: '회원님을 팔로우하기 시작했습니다.',
-    createdAt: new Date(now - 2 * 3600 * 1000).toISOString(),
-    isRead: true,
-  },
-  {
-    id: 4, type: 'COMMENT',
-    actorUsername: 'tuning_master', actorColor: '#6C5CE7',
-    message: '댓글을 남겼습니다: "저도 같은 모델 타는데 공감 100%입니다 👍"',
-    createdAt: new Date(now - 5 * 3600 * 1000).toISOString(),
-    isRead: true,
-  },
-  {
-    id: 5, type: 'FOLLOW',
-    actorUsername: 'lambo_seoul', actorColor: '#FD9644',
-    message: '회원님을 팔로우하기 시작했습니다.',
-    createdAt: new Date(now - 1 * 86400 * 1000).toISOString(),
-    isRead: true,
-  },
-  {
-    id: 6, type: 'COMMENT',
-    actorUsername: 'bmw_lover99', actorColor: '#2196F3',
-    message: '댓글을 남겼습니다: "오 저도 다음 주 드라이브 계획 중인데 코스 공유해주실 수 있나요?"',
-    createdAt: new Date(now - 2 * 86400 * 1000).toISOString(),
-    isRead: true,
-  },
-];
+// API 응답 → 화면 아이템 변환
+function toItem(n) {
+  return {
+    id: n.notificationId,
+    type: n.type,
+    senderId: n.senderId,
+    actorUsername: n.senderUsername ?? `user${n.senderId}`,
+    actorProfileImageUrl: n.senderProfileImageUrl ?? null,
+    actorColor: avatarColor(n.senderId),
+    boardId: n.boardId,
+    createdAt: n.createdAt,
+    isRead: n.read,
+  };
+}
 
 function NotifItem({ item, onRead }) {
-  const meta = TYPE_META[item.type];
+  const router = useRouter();
+  const meta = TYPE_META[item.type] ?? TYPE_META.COMMENT;
+
+  const handleClick = () => {
+    onRead(item.id);
+    if (item.type === 'FOLLOW') {
+      router.push(`/users/${item.senderId}`);
+    } else if (item.boardId) {
+      router.push(`/boards/${item.boardId}`);
+    }
+  };
+
   return (
     <button
       className={`${styles.item} ${!item.isRead ? styles.unread : ''}`}
-      onClick={() => onRead(item.id)}
+      onClick={handleClick}
     >
       <div className={styles.avatarWrap}>
-        <div className={styles.avatar} style={{ background: item.actorColor }}>
-          {item.actorUsername[0].toUpperCase()}
-        </div>
+        {item.actorProfileImageUrl ? (
+          <NotifAvatar src={item.actorProfileImageUrl} fallbackColor={item.actorColor} username={item.actorUsername} />
+        ) : (
+          <div className={styles.avatar} style={{ background: item.actorColor }}>
+            {item.actorUsername[0].toUpperCase()}
+          </div>
+        )}
         <span className={styles.badge} style={{ background: meta.badgeBg }}>
           <meta.Badge />
         </span>
       </div>
       <div className={styles.textWrap}>
         <p className={styles.message}>
-          <strong>{item.actorUsername}</strong>
-          {' '}
-          {item.message}
+          <strong>{item.actorUsername}</strong>{' '}{meta.message}
         </p>
         <span className={styles.time}>{timeAgo(item.createdAt)}</span>
       </div>
@@ -103,15 +107,7 @@ function NotifItem({ item, onRead }) {
 }
 
 export default function NotificationsView() {
-  const [items, setItems] = useState(MOCK_NOTIFICATIONS);
-
-  const markRead = (id) =>
-    setItems((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
-
-  const markAllRead = () =>
-    setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
-
-  const unreadCount = items.filter((n) => !n.isRead).length;
+  const { items, unreadCount, markRead, markAllRead } = useContext(NotificationContext);
 
   const todayItems = items.filter((n) => Date.now() - new Date(n.createdAt) < 86400 * 1000);
   const olderItems = items.filter((n) => Date.now() - new Date(n.createdAt) >= 86400 * 1000);
