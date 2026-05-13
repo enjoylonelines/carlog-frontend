@@ -126,12 +126,23 @@
   padding: 5px 16px;
   border-radius: 20px;
   border: 1.5px solid var(--color-primary);
-  background: transparent;
-  color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.followBtn.following {
+  background: white;
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.followBtn.following:hover {
+  background: #F5F5F5;
 }
 
 /* 이미지 */
@@ -193,6 +204,7 @@
   aspect-ratio: 4 / 3;
   overflow: hidden;
   background: #F0F0F0;
+  position: relative;
   scroll-snap-align: center;
   scroll-snap-stop: always;
 }

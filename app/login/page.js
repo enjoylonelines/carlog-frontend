@@ -7,7 +7,7 @@ import styles from "./page.module.css";
 
 export default function LoginPage() {
     const router = useRouter();
-    const { setUser, setAccessToken } = useContext(AuthContext);
+    const { setUser, setAccessToken, setUserId } = useContext(AuthContext);
 
     const [mode, setMode] = useState("login"); // "login" | "register"
 
@@ -32,7 +32,7 @@ export default function LoginPage() {
             const { accessToken, username, userId } = res.data;
             setUser(username);
             setAccessToken(accessToken);
-            localStorage.setItem("userId", userId);
+            setUserId(userId);
             router.push("/");
         } catch (err) {
             const msg = err.response?.data?.message || "아이디 또는 비밀번호가 올바르지 않습니다.";
