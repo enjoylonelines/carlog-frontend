@@ -7,6 +7,7 @@ import { AuthContext } from "../../../contexts/AuthContext";
 import { checkFollow, followUser, unfollowUser } from "../../../api";
 import { avatarColor as getAvatarColor } from "../../utils/avatar";
 import { followCache } from "../../utils/followCache";
+import { createLike, deleteLike } from "@/api/like";
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL;
 const mediaUrl = (url) => {
@@ -111,15 +112,13 @@ export default function PostCard({ post }) {
 
     try {
       if (liked) {
-        const res = await likeApi.deleteLike(boardId);
-
-        setLiked((res.data.isLiked ?? 0) === 1);
-        setLikes(res.data.likeCount ?? 0);
+        const res = await deleteLike(boardId);
+        setLiked((res?.isLiked ?? 0) === 1);
+        setLikes(res?.likeCount ?? 0);
       } else {
-        const res = await likeApi.createLike(boardId);
-
-        setLiked((res.data.isLiked ?? 0) === 1);
-        setLikes(res.data.likeCount ?? 0);
+        const data = await createLike(boardId);
+        setLiked((data?.isLiked ?? 0) === 1);
+        setLikes(data?.likeCount ?? 0);;
       }
     } catch (err) {
       console.error("좋아요 처리 실패", err);

@@ -22,7 +22,7 @@ const mapBoard = (board) => ({
   commentCount: board.commentCount ?? 0,
   mediaUrls: board.mediaUrls || [],
   imageUrl: board.mediaUrls?.[0] || '/no-image.svg',
-  isLiked: board.isLike,
+  isLike: board.isLike,
   likeCount: board.likecount,
 });
 
