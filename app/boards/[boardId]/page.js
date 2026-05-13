@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useContext } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { AuthContext } from "../../../contexts/AuthContext";
 import CreatePost from "../../components/CreatePost/CreatePost";
 import { getBoard, deleteBoard, getComments, createComment, deleteComment, getReplies, checkFollow, followUser, unfollowUser, getUserProfile } from "../../../api";
 import Image from "next/image";
@@ -27,6 +28,7 @@ function timeAgo(dateStr) {
 export default function BoardDetailPage() {
   const { boardId } = useParams();
   const router = useRouter();
+  const { userId: MY_USER_ID } = useContext(AuthContext);
 
   const [board, setBoard] = useState(null);
   const [comments, setComments] = useState([]);
@@ -41,7 +43,7 @@ export default function BoardDetailPage() {
   const [hasMoreComments, setHasMoreComments] = useState(true);
   const [totalCommentCount, setTotalCommentCount] = useState(0);
 
-  const commentPageRef = useRef(1);
+  const nextCursorRef = useRef(null);
   const isLoadingCommentsRef = useRef(false);
   const commentSentinelRef = useRef(null);
 
@@ -68,11 +70,11 @@ export default function BoardDetailPage() {
     });
   }, []);
 
-  const loadComments = useCallback(async (page, append) => {
+  const loadComments = useCallback(async (lastCommentId, append) => {
     if (isLoadingCommentsRef.current) return;
     isLoadingCommentsRef.current = true;
 
-    const data = await getComments(boardId, page);
+    const data = await getComments(boardId, lastCommentId);
     isLoadingCommentsRef.current = false;
 
     setComments((prev) => {
@@ -81,18 +83,18 @@ export default function BoardDetailPage() {
       return [...prev, ...data.comments.filter((c) => !existingIds.has(c.commentId))];
     });
     setHasMoreComments(data.hasNext);
+    nextCursorRef.current = data.nextCursor ?? null;
     if (!append) setTotalCommentCount(data.totalCount ?? 0);
-    commentPageRef.current = page;
   }, [boardId]);
 
   useEffect(() => {
-    commentPageRef.current = 1;
-    Promise.all([getBoard(boardId), getComments(boardId, 1)]).then(([boardData, commentData]) => {
+    nextCursorRef.current = null;
+    Promise.all([getBoard(boardId), getComments(boardId, null)]).then(([boardData, commentData]) => {
       setBoard(boardData);
       setComments(commentData.comments);
       setHasMoreComments(commentData.hasNext);
       setTotalCommentCount(commentData.totalCount ?? 0);
-      commentPageRef.current = 1;
+      nextCursorRef.current = commentData.nextCursor ?? null;
       setCurrentMediaIndex(0);
       setLoading(false);
     });
@@ -105,7 +107,7 @@ export default function BoardDetailPage() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !isLoadingCommentsRef.current && hasMoreComments) {
-          loadComments(commentPageRef.current + 1, true);
+          loadComments(nextCursorRef.current, true);
         }
       },
       { rootMargin: '100px' }
@@ -531,7 +533,7 @@ export default function BoardDetailPage() {
         )}
         <div className={styles.commentBarInner}>
           <div className={styles.commentBarAvatar} style={{ background: avatarColor(MY_USER_ID) }}>
-            카
+            {myUsername ? myUsername[0].toUpperCase() : '?'}
           </div>
           <input
             ref={commentInputRef}

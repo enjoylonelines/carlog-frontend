@@ -1,15 +1,14 @@
 "use client";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import styles from "./PostCard.module.css";
+import { AuthContext } from "../../../contexts/AuthContext";
 import { checkFollow, followUser, unfollowUser } from "../../../api";
 import { avatarColor as getAvatarColor } from "../../utils/avatar";
 import { followCache } from "../../utils/followCache";
-import likeApi from "../../../apis/likeApi";
 
-const MY_USER_ID = 1;
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || "http://localhost";
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL;
 const mediaUrl = (url) => {
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -28,6 +27,7 @@ function timeAgo(dateStr) {
 
 export default function PostCard({ post }) {
   const router = useRouter();
+  const { userId: MY_USER_ID } = useContext(AuthContext);
   const [expanded, setExpanded] = useState(false);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const mediaListRef = useRef(null);
@@ -64,14 +64,12 @@ export default function PostCard({ post }) {
     if (isOwnPost) return;
     if (followCache[userId] !== undefined) return;
     let cancelled = false;
-    checkFollow({ userId: MY_USER_ID, targetId: userId }).then(
-      (isFollowing) => {
-        if (!cancelled) {
-          followCache[userId] = isFollowing;
-          setFollowing(isFollowing);
-        }
-      },
-    );
+    checkFollow({ userId: MY_USER_ID, targetId: userId }).then((isFollowing) => {
+      if (!cancelled) {
+        followCache[userId] = isFollowing;
+        setFollowing(isFollowing);
+      }
+    });
     return () => {
       cancelled = true;
     };
@@ -99,10 +97,7 @@ export default function PostCard({ post }) {
     event.stopPropagation();
     const list = mediaListRef.current;
     if (!list) return;
-    const nextIndex = Math.min(
-      Math.max(currentMediaIndex + direction, 0),
-      images.length - 1,
-    );
+    const nextIndex = Math.min(Math.max(currentMediaIndex + direction, 0), images.length - 1);
     list.scrollTo({
       left: nextIndex * list.clientWidth,
       behavior: "smooth",
@@ -136,24 +131,13 @@ export default function PostCard({ post }) {
       <div className={styles.header}>
         <div
           className={styles.avatarWrap}
-          onClick={() =>
-            router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)
-          }
+          onClick={() => router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) =>
-            e.key === "Enter" &&
-            router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)
-          }
+          onKeyDown={(e) => e.key === "Enter" && router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)}
         >
           {profileImageUrl ? (
-            <Image
-              src={profileImageUrl}
-              alt={username}
-              width={40}
-              height={40}
-              className={styles.avatarImg}
-            />
+            <Image src={profileImageUrl} alt={username} width={40} height={40} className={styles.avatarImg} />
           ) : (
             <div className={styles.avatar} style={{ background: color }}>
               {(username || "U")[0].toUpperCase()}
@@ -162,24 +146,16 @@ export default function PostCard({ post }) {
         </div>
         <div
           className={styles.meta}
-          onClick={() =>
-            router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)
-          }
+          onClick={() => router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) =>
-            e.key === "Enter" &&
-            router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)
-          }
+          onKeyDown={(e) => e.key === "Enter" && router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)}
         >
           <span className={styles.username}>{username || "알 수 없음"}</span>
           <span className={styles.time}>{timeAgo(createdAt)}</span>
         </div>
         {!isOwnPost && following !== null && (
-          <button
-            className={`${styles.followBtn} ${following ? styles.following : ""}`}
-            onClick={handleFollow}
-          >
+          <button className={`${styles.followBtn} ${following ? styles.following : ""}`} onClick={handleFollow}>
             {following ? "팔로잉" : "팔로우"}
           </button>
         )}
@@ -190,17 +166,11 @@ export default function PostCard({ post }) {
         onClick={() => router.push(`/boards/${boardId}`)}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) =>
-          e.key === "Enter" && router.push(`/boards/${boardId}`)
-        }
+        onKeyDown={(e) => e.key === "Enter" && router.push(`/boards/${boardId}`)}
       >
         {images.length > 0 && (
           <div className={styles.mediaFrame}>
-            <div
-              className={styles.mediaList}
-              ref={mediaListRef}
-              onScroll={handleMediaScroll}
-            >
+            <div className={styles.mediaList} ref={mediaListRef} onScroll={handleMediaScroll}>
               {images.map((url, index) => (
                 <div className={styles.imageWrap} key={`${url}-${index}`}>
                   <Image
@@ -298,14 +268,7 @@ export default function PostCard({ post }) {
           )}
 
           <button className={styles.stat} onClick={handleLike}>
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill={liked ? "currentColor" : "none"}
-              stroke="currentColor"
-              strokeWidth="2"
-            >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
 
@@ -314,28 +277,14 @@ export default function PostCard({ post }) {
 
           <div className={styles.stats}>
             <span className={styles.stat}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
               {(hitcount || 0).toLocaleString()}
             </span>
             <span className={styles.stat}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               {(commentCount || 0).toLocaleString()}
