@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { getHashtags, createBoard, updateBoard } from '../../../api';
 import styles from './CreatePost.module.css';
 
@@ -14,6 +15,7 @@ const CameraIcon = () => (
 );
 
 export default function CreatePost({ onClose, initialPost, onSaved }) {
+  const router = useRouter();
   const isEdit = !!initialPost;
 
   const [content, setContent] = useState(initialPost?.content ?? '');
@@ -61,23 +63,28 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
     setSubmitting(true);
 
     try {
+      let savedBoard = null;
+
       if (isEdit) {
-        await updateBoard({
+        savedBoard = await updateBoard({
           boardId: initialPost.boardId,
           content,
           hashtags: selectedTags,
           mediaFiles,
         });
       } else {
-        await createBoard({
+        savedBoard = await createBoard({
           content,
           hashtags: selectedTags,
           mediaFiles,
         });
       }
 
-      onSaved?.();
+      onSaved?.(savedBoard);
       onClose();
+      if (!isEdit && savedBoard?.boardId) {
+        router.push(`/boards/${savedBoard.boardId}`);
+      }
     } finally {
       setSubmitting(false);
     }

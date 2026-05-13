@@ -10,6 +10,7 @@ export default function ClientShell({ children }) {
   const [showCreate, setShowCreate] = useState(false);
 
   const handleCreateSaved = () => {
+    sessionStorage.setItem("feed_stale", "1");
     window.dispatchEvent(new Event("carlog:board-saved"));
   };
 

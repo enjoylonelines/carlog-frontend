@@ -176,6 +176,8 @@ export default function BoardDetailPage() {
 
   const handleDelete = async () => {
     await deleteBoard(boardId);
+    sessionStorage.setItem("feed_stale", "1");
+    window.dispatchEvent(new Event("carlog:board-deleted"));
     router.back();
   };
 
@@ -604,6 +606,8 @@ export default function BoardDetailPage() {
           initialPost={{ ...board, tags: board.hashtags || [], imageUrl: firstImageUrl }}
           onClose={() => setShowEdit(false)}
           onSaved={() => {
+            sessionStorage.setItem("feed_stale", "1");
+            window.dispatchEvent(new Event("carlog:board-saved"));
             getBoard(boardId).then((data) => {
               if (data) setBoard(data);
             });

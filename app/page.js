@@ -46,6 +46,8 @@ export default function FeedPage() {
 
   const pageRef = useRef(_cachedPage);
   const isLoadingRef = useRef(false);
+  const refreshTimerRef = useRef(null);
+  const refreshFeedRef = useRef(null);
   const sentinelRef = useRef(null);
   const scrollRestoredRef = useRef(false);
   const scrollPendingRef = useRef(false);
@@ -105,20 +107,64 @@ export default function FeedPage() {
       scrollRestoredRef.current = true;
       scrollPendingRef.current = true;
     }
-  }, [selectedTag, keyword, restoreScroll]);
+  }, [selectedTag, keyword]);
+
+  const refreshFeed = useCallback(() => {
+    if (refreshTimerRef.current) {
+      window.clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+
+    if (isLoadingRef.current) {
+      refreshTimerRef.current = window.setTimeout(() => {
+        refreshFeedRef.current?.();
+      }, 50);
+      return;
+    }
+
+    sessionStorage.removeItem('feed_stale');
+    _cachedPosts = [];
+    _cachedHasMore = true;
+    _cachedPage = 1;
+    pageRef.current = 1;
+    scrollRestoredRef.current = true;
+    scrollPendingRef.current = false;
+    setPosts([]);
+    setHasMore(true);
+    loadBoards(1, false);
+  }, [loadBoards]);
+
+  useEffect(() => {
+    refreshFeedRef.current = refreshFeed;
+  }, [refreshFeed]);
 
   useEffect(() => {
     // 댓글 등 변이 후 스탈 플래그가 있으면 캐시 무효화
     if (sessionStorage.getItem('feed_stale')) {
-      sessionStorage.removeItem('feed_stale');
-      _cachedPosts = [];
+      refreshFeed();
+      return;
     }
     if (!selectedTag && !keyword && _cachedPosts.length > 0) return;
     scrollRestoredRef.current = false;
     _cachedPosts = [];
     pageRef.current = 1;
-    loadBoards(1, false);
-  }, [loadBoards, selectedTag, keyword]);
+    const timer = window.setTimeout(() => {
+      loadBoards(1, false);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadBoards, refreshFeed, selectedTag, keyword]);
+
+  useEffect(() => {
+    window.addEventListener('carlog:board-saved', refreshFeed);
+    window.addEventListener('carlog:board-deleted', refreshFeed);
+    return () => {
+      window.removeEventListener('carlog:board-saved', refreshFeed);
+      window.removeEventListener('carlog:board-deleted', refreshFeed);
+      if (refreshTimerRef.current) {
+        window.clearTimeout(refreshTimerRef.current);
+      }
+    };
+  }, [refreshFeed]);
 
 
   // posts가 DOM에 반영된 후 pending 스크롤 복원 실행 (새로고침 포함)
