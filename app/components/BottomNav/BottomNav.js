@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { NotificationContext } from '../../../contexts/NotificationContext';
 import styles from './BottomNav.module.css';
 
 const HomeIcon = () => (
@@ -45,6 +46,7 @@ const HIDE_THRESHOLD = 8;
 
 export default function BottomNav({ onCreateClick }) {
   const pathname = usePathname();
+  const { unreadCount } = useContext(NotificationContext);
   const lastScrollY = useRef(0);
   // prevPath를 state에 함께 저장해 render 중 비교 (ref.current 읽기 금지 대응)
   const [{ prevPath, scrollHidden }, setNavState] = useState({ prevPath: pathname, scrollHidden: false });
@@ -92,7 +94,14 @@ export default function BottomNav({ onCreateClick }) {
               className={`${styles.item} ${active ? styles.active : ''}`}
               aria-label={item.label}
             >
-              <span className={styles.icon}><item.Icon /></span>
+              <span className={styles.icon}>
+                <item.Icon />
+                {item.id === 'notifications' && unreadCount > 0 && (
+                  <span className={styles.badge}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </span>
               <span className={styles.label}>{item.label}</span>
             </Link>
           );
