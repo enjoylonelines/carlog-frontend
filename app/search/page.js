@@ -25,6 +25,8 @@ const mapBoard = (board) => ({
   tags: board.hashtags || [],
   commentCount: board.commentCount ?? 0,
   imageUrl: board.mediaUrls?.[0] || '/no-image.svg',
+  isLike: board.isLike,
+  likeCount: board.likecount,
 });
 
 export default function SearchPage() {

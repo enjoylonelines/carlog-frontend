@@ -20,7 +20,13 @@ export default function ClientShell({ children }) {
       <main className={styles.main}>{children}</main>
       <BottomNav onCreateClick={() => setShowCreate(true)} />
 
-      {showCreate && <CreatePost onClose={() => setShowCreate(false)} onSaved={handleCreateSaved} />}
+        
+      {showCreate && (
+        <CreatePost
+          onClose={() => setShowCreate(false)}
+          onSaved={handleCreateSaved}
+        />
+      )}
     </AuthContextProvider>
   );
 }
