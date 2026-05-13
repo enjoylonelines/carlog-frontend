@@ -20,6 +20,7 @@ const mapBoard = (board) => ({
   createdAt: board.createdDate,
   tags: board.hashtags || [],
   commentCount: board.commentCount ?? 0,
+  mediaUrls: board.mediaUrls || [],
   imageUrl: board.mediaUrls?.[0] || '/no-image.svg',
 });
 
