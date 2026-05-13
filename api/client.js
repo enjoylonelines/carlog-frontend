@@ -6,6 +6,20 @@ const SECONDARY = 'http://192.168.5.53';
 const primary = axios.create({ baseURL: PRIMARY });
 const secondary = axios.create({ baseURL: SECONDARY });
 
+function authInterceptor(config) {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers = config.headers ?? {};
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+  return config;
+}
+
+primary.interceptors.request.use(authInterceptor);
+secondary.interceptors.request.use(authInterceptor);
+
 // GET 응답 메모리 캐시 (TTL 없음 — 변이 요청 시 무효화)
 const cache = new Map();
 

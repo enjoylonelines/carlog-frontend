@@ -24,8 +24,6 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString("ko-KR");
 }
 
-const MY_USER_ID = 1;
-
 export default function BoardDetailPage() {
   const { boardId } = useParams();
   const router = useRouter();
@@ -77,7 +75,11 @@ export default function BoardDetailPage() {
     const data = await getComments(boardId, page);
     isLoadingCommentsRef.current = false;
 
-    setComments((prev) => append ? [...prev, ...data.comments] : data.comments);
+    setComments((prev) => {
+      if (!append) return data.comments;
+      const existingIds = new Set(prev.map((c) => c.commentId));
+      return [...prev, ...data.comments.filter((c) => !existingIds.has(c.commentId))];
+    });
     setHasMoreComments(data.hasNext);
     if (!append) setTotalCommentCount(data.totalCount ?? 0);
     commentPageRef.current = page;
@@ -158,7 +160,7 @@ export default function BoardDetailPage() {
   };
 
   const handleDelete = async () => {
-    await boardApi.boardDelete(boardId);
+    await deleteBoard(boardId);
     router.back();
   };
 
@@ -204,7 +206,7 @@ export default function BoardDetailPage() {
       setReplyingTo(null);
       setTotalCommentCount((prev) => prev + 1);
     } else {
-      setComments((prev) => [...prev, newEntry]);
+      setComments((prev) => [newEntry, ...prev]);
       setTotalCommentCount((prev) => prev + 1);
     }
 
