@@ -79,3 +79,19 @@ export const deleteComment = (commentId) =>
 
 export const getReplies = (boardId, parentCommentId) =>
   request(`/api/comments?boardId=${boardId}&parentCommentId=${parentCommentId}`).then((data) => data?.comments ?? []);
+
+// 계정 관리
+export const deleteUser = (userId, immediate = false) =>
+  request(`/api/users/${userId}?immediate=${immediate}`, { method: 'DELETE' });
+
+export const updateUserAccount = (userId, data) =>
+  request(`/api/users/${userId}/account`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+export const checkLoginIdAvailable = (userId, loginId) =>
+  request(`/api/users/${userId}/check-loginid?loginId=${encodeURIComponent(loginId)}`);
+
+export const checkEmailAvailable = (userId, email) =>
+  request(`/api/users/${userId}/check-email?email=${encodeURIComponent(email)}`);

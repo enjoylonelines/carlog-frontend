@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { getUserProfile } from '../../lib/api';
 import styles from './ProfileView.module.css';
 
@@ -32,6 +33,7 @@ const HeartIcon = () => (
 );
 
 export default function ProfileView() {
+  const router = useRouter();
   const [profile, setProfile] = useState(MOCK_PROFILE);
   const [tab, setTab] = useState('posts');
 
@@ -75,8 +77,9 @@ export default function ProfileView() {
       )}
 
       <div className={styles.actions}>
-        <button className={styles.actionBtn}>프로필 편집</button>
+        <button className={styles.actionBtn} onClick={() => router.push('/account/edit')}>프로필 편집</button>
         <button className={styles.actionBtn}>프로필 공유</button>
+        <button className={`${styles.actionBtn} ${styles.actionBtnDanger}`} onClick={() => router.push('/account/delete')}>회원 탈퇴</button>
       </div>
 
       <div className={styles.tabBar}>

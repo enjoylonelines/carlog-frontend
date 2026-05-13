@@ -29,9 +29,10 @@ export default function LoginPage() {
         setLoading(true);
         try {
             const res = await authApi.login(identifier, password);
-            const { accessToken, username } = res.data;
+            const { accessToken, username, userId } = res.data;
             setUser(username);
             setAccessToken(accessToken);
+            localStorage.setItem("userId", userId);
             router.push("/");
         } catch (err) {
             const msg = err.response?.data?.message || "아이디 또는 비밀번호가 올바르지 않습니다.";

@@ -26,6 +26,6 @@ export default function ClientShell({ children }) {
           onSaved={handleCreateSaved}
         />
       )}
-    </>
+    </AuthContextProvider>
   );
 }
