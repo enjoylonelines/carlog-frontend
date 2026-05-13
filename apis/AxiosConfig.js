@@ -2,7 +2,7 @@
 
 import axios from "axios";
 
-axios.defaults.baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost";
+axios.defaults.baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 // 로그인을 성공했을때 기본 요청 헤더에 Authorization 추가
 export function addAuthHeader(accessToken) {

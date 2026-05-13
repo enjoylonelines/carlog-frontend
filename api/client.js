@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const PRIMARY = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:80';
+const PRIMARY = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 const SECONDARY = 'http://192.168.5.53';
 
 const primary = axios.create({ baseURL: PRIMARY });
