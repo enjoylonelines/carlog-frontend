@@ -34,7 +34,10 @@ export default function ProfileEditModal({ profile, userId, onClose, onSaved }) 
       profileImageUrl,
     });
     setSaving(false);
-    if (updated) onSaved(updated);
+    if (updated) {
+      onSaved(updated);
+      sessionStorage.setItem('feed_stale', '1');
+    }
     onClose();
   };
 

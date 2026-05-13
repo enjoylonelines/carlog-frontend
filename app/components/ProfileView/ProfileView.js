@@ -1,11 +1,12 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { getUserProfile, searchBoards } from '../../../api';
 import ProfileEditModal from '../ProfileEditModal/ProfileEditModal';
 import styles from './ProfileView.module.css';
+
+const isSrc = (url) => !!url && (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://'));
 
 const MOCK_PROFILE = {
   userId: null,
@@ -16,6 +17,19 @@ const MOCK_PROFILE = {
   followingCount: 0,
   boardCount: 0,
 };
+
+function GridImage({ src, className }) {
+  const [failed, setFailed] = useState(false);
+  const imgSrc = !failed && isSrc(src) ? src : '/no-image.svg';
+  return (
+    <img
+      src={imgSrc}
+      alt=""
+      className={className}
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 const GridIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
@@ -28,6 +42,7 @@ export default function ProfileView() {
   const router = useRouter();
   const { userId: myUserId } = useContext(AuthContext);
   const [profile, setProfile] = useState(MOCK_PROFILE);
+  const [profileImgErr, setProfileImgErr] = useState(false);
   const [posts, setPosts] = useState([]);
   const [showEdit, setShowEdit] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -61,7 +76,14 @@ export default function ProfileView() {
   useEffect(() => {
     if (!myUserId) return;
     getUserProfile(myUserId).then((data) => {
-      if (data && data.username) setProfile((prev) => ({ ...prev, ...data }));
+      if (data) {
+        setProfile((prev) => ({
+          ...prev,
+          ...data,
+          username: data.username || prev.username,
+        }));
+        setProfileImgErr(false);
+      }
     });
     pageRef.current = 1;
     loadPosts(1, false);
@@ -91,16 +113,24 @@ export default function ProfileView() {
           profile={profile}
           userId={myUserId}
           onClose={() => setShowEdit(false)}
-          onSaved={(updated) => setProfile((prev) => ({ ...prev, ...updated }))}
+          onSaved={(updated) => {
+            setProfile((prev) => ({ ...prev, ...updated }));
+            setProfileImgErr(false);
+          }}
         />
       )}
       <div className={styles.wrap}>
         <div className={styles.header}>
-          {profile.profileImageUrl ? (
-            <Image src={profile.profileImageUrl} alt="프로필" width={80} height={80} className={styles.avatarLg} />
+          {isSrc(profile.profileImageUrl) && !profileImgErr ? (
+            <img
+              src={profile.profileImageUrl}
+              alt="프로필"
+              className={styles.avatarLg}
+              onError={() => setProfileImgErr(true)}
+            />
           ) : (
             <div className={styles.avatarLg} style={{ background: profile.avatarColor }}>
-              {profile.username[0].toUpperCase()}
+              {(profile.username || '?')[0].toUpperCase()}
             </div>
           )}
           <div className={styles.infoCol}>
@@ -133,11 +163,11 @@ export default function ProfileView() {
         <div className={styles.actions}>
           <button className={styles.actionBtn} onClick={() => setShowEdit(true)}>프로필 편집</button>
           <button className={styles.actionBtn} onClick={() => {
-          navigator.clipboard.writeText(`${window.location.origin}/users/${myUserId}`);
-          setToast(true);
-          setTimeout(() => setToast(false), 2000);
-        }}>프로필 공유</button>
-        {toast && <div className={styles.toast}>링크가 복사되었어요</div>}
+            navigator.clipboard.writeText(`${window.location.origin}/users/${myUserId}`);
+            setToast(true);
+            setTimeout(() => setToast(false), 2000);
+          }}>프로필 공유</button>
+          {toast && <div className={styles.toast}>링크가 복사되었어요</div>}
         </div>
 
         <div className={styles.tabBar}>
@@ -156,13 +186,7 @@ export default function ProfileView() {
                 className={styles.cell}
                 onClick={() => router.push(`/boards/${post.boardId}`)}
               >
-                <img
-                  src={post.mediaUrls?.[0] || '/no-image.svg'}
-                  alt=""
-                  className={styles.img}
-                  loading="lazy"
-                  onError={(e) => { e.currentTarget.src = '/no-image.svg'; }}
-                />
+                <GridImage src={post.mediaUrls?.[0]} className={styles.img} />
               </button>
             ))}
           </div>
