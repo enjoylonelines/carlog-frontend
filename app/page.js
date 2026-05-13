@@ -21,6 +21,8 @@ const mapBoard = (board) => ({
   tags: board.hashtags || [],
   commentCount: board.commentCount ?? 0,
   imageUrl: board.mediaUrls?.[0] || '/no-image.svg',
+  isLiked: board.isLike,
+  likeCount: board.likecount,
 });
 
 // 모듈 레벨 캐시 — 네비게이션 간 posts 유지

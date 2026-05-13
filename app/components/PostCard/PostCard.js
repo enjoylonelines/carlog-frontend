@@ -45,7 +45,7 @@ export default function PostCard({ post }) {
     imageUrl,
     mediaUrls,
     commentCount,
-    isLiked,
+    isLike,
     likeCount,
   } = post;
   const images = mediaUrls?.length ? mediaUrls : imageUrl ? [imageUrl] : [];
@@ -57,7 +57,7 @@ export default function PostCard({ post }) {
   const [following, setFollowing] = useState(() => followCache[userId] ?? null);
 
   // 좋아요
-  const [liked, setLiked] = useState(() => (isLiked ?? 0) === 1);
+  const [liked, setLiked] = useState(() => (isLike ?? 0) === 1);
   const [likes, setLikes] = useState(() => likeCount ?? 0);
 
   useEffect(() => {
@@ -297,7 +297,9 @@ export default function PostCard({ post }) {
             </p>
           )}
 
-          <button className={styles.stat} onClick={handleLike}>
+          <div className={styles.stats}>
+            {/* 좋아요 버튼  */}
+            <button className={styles.stat} onClick={handleLike}>
             <svg
               width="14"
               height="14"
@@ -311,8 +313,6 @@ export default function PostCard({ post }) {
 
             {likes.toLocaleString()}
           </button>
-
-          <div className={styles.stats}>
             <span className={styles.stat}>
               <svg
                 width="14"
