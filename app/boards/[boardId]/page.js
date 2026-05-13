@@ -36,8 +36,6 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString("ko-KR");
 }
 
-const MY_USER_ID = 1;
-
 export default function BoardDetailPage() {
   const { boardId } = useParams();
   const router = useRouter();
