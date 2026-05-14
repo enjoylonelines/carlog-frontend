@@ -18,6 +18,7 @@ import {
 } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
 import { BOARD_DELETED_EVENT, markFeedStale } from '../../utils/feedRefresh';
+import { NotificationContext } from '../../../contexts/NotificationContext';
 import { likeCache } from '../../utils/likeCache';
 import styles from './page.module.css';
 import { createLike, deleteLike } from '@/api/like';
@@ -59,6 +60,7 @@ export default function BoardDetailPage() {
   const { boardId } = useParams();
   const router = useRouter();
   const { userId: MY_USER_ID } = useContext(AuthContext);
+  const { deleteByBoardId: deleteNotificationsByBoard, updateCommentContent } = useContext(NotificationContext);
 
   const [board, setBoard] = useState(null);
   const [comments, setComments] = useState([]);
@@ -143,6 +145,7 @@ export default function BoardDetailPage() {
     window.scrollTo(0, 0);
     nextCursorRef.current = null;
     Promise.all([getBoard(boardId), getComments(boardId, null)]).then(([boardData, commentData]) => {
+      if (!boardData) return;
       setBoard(boardData);
       const cached = likeCache[boardId];
       setLiked(cached ? cached.liked : boardData.isLike === 1);
@@ -247,6 +250,7 @@ export default function BoardDetailPage() {
 
   const handleDelete = async () => {
     await deleteBoard(boardId);
+    deleteNotificationsByBoard(boardId);
     markFeedStale(BOARD_DELETED_EVENT);
     router.back();
   };
@@ -258,6 +262,8 @@ export default function BoardDetailPage() {
 
     try {
       if (editingCommentId) {
+        const oldContent = comments.find((c) => c.commentId === editingCommentId)?.content
+          ?? Object.values(repliesCache).flat().find((r) => r.commentId === editingCommentId)?.content;
         const res = await updateComment(editingCommentId, commentText);
         if (res) {
           setComments((prev) =>
@@ -271,6 +277,10 @@ export default function BoardDetailPage() {
             });
             return next;
           });
+
+          if (oldContent) {
+            updateCommentContent(boardId, MY_USER_ID, oldContent, res.content);
+          }
         }
 
         setEditingCommentId(null);
@@ -294,6 +304,7 @@ export default function BoardDetailPage() {
         commentId: result.commentId,
         userId: MY_USER_ID,
         username: myUsername,
+        profileImageUrl: myProfileImageUrl,
         content: commentText,
         createdAt: new Date().toISOString(),
         replyCount: 0,
@@ -657,60 +668,40 @@ export default function BoardDetailPage() {
                       </div>
                       <p className={styles.commentText}>{c.content}</p>
                       <div className={styles.commentActions}>
-                        <button className={styles.replyBtn} onClick={() => startReply(c)}>
-                          답글 달기
-                        </button>
-                        {(c.replyCount > 0 || repliesCache[c.commentId]?.length > 0) && (
-                          <button className={styles.toggleRepliesBtn} onClick={() => handleToggleReplies(c.commentId)}>
-                            {loadingReplies.has(c.commentId)
-                              ? '로딩 중...'
-                              : expandedReplies.has(c.commentId)
-                                ? '답글 숨기기'
-                                : `답글 보기(${c.replyCount || repliesCache[c.commentId]?.length || 0}개)`}
+                        <div className={styles.commentActionLeft}>
+                          <button className={styles.replyBtn} onClick={() => startReply(c)}>
+                            답글 달기
                           </button>
+                          {(c.replyCount > 0 || repliesCache[c.commentId]?.length > 0) && (
+                            <button className={styles.toggleRepliesBtn} onClick={() => handleToggleReplies(c.commentId)}>
+                              {loadingReplies.has(c.commentId)
+                                ? '로딩 중...'
+                                : expandedReplies.has(c.commentId)
+                                  ? '답글 숨기기'
+                                  : `답글 보기(${c.replyCount || repliesCache[c.commentId]?.length || 0}개)`}
+                            </button>
+                          )}
+                        </div>
+                        {c.userId === MY_USER_ID && (
+                          <div className={styles.commentActionRight}>
+                            <button
+                              className={styles.commentEditBtn}
+                              onClick={() => {
+                                setEditingCommentId(c.commentId);
+                                setReplyingTo(null);
+                                setCommentText(c.content);
+                                setTimeout(() => commentInputRef.current?.focus(), 50);
+                              }}
+                            >
+                              수정
+                            </button>
+                            <button className={styles.commentDeleteBtn} onClick={() => handleCommentDelete(c.commentId)}>
+                              삭제
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
-                    {c.userId === MY_USER_ID && (
-                      <div className={styles.commentOwnerActions}>
-                        <button
-                          className={styles.commentEditBtn}
-                          onClick={() => {
-                            setEditingCommentId(c.commentId);
-                            setReplyingTo(null);
-                            setCommentText(c.content);
-                            setTimeout(() => commentInputRef.current?.focus(), 50);
-                          }}
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          >
-                            <path d="M12 20h9" />
-                            <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                          </svg>
-                        </button>
-                        <button className={styles.commentDeleteBtn} onClick={() => handleCommentDelete(c.commentId)}>
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          >
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                          </svg>
-                        </button>
-                      </div>
-                    )}
                   </div>
 
                   {/* 대댓글 목록 */}
@@ -731,50 +722,31 @@ export default function BoardDetailPage() {
                               <span className={styles.commentTime}>{timeAgo(r.createdAt)}</span>
                             </div>
                             <p className={styles.commentText}>{r.content}</p>
+                            {r.userId === MY_USER_ID && (
+                              <div className={styles.commentActions}>
+                                <div className={styles.commentActionLeft} />
+                                <div className={styles.commentActionRight}>
+                                  <button
+                                    className={styles.commentEditBtn}
+                                    onClick={() => {
+                                      setEditingCommentId(r.commentId);
+                                      setReplyingTo(null);
+                                      setCommentText(r.content);
+                                      setTimeout(() => commentInputRef.current?.focus(), 50);
+                                    }}
+                                  >
+                                    수정
+                                  </button>
+                                  <button
+                                    className={styles.commentDeleteBtn}
+                                    onClick={() => handleReplyDelete(r.commentId, c.commentId)}
+                                  >
+                                    삭제
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          {r.userId === MY_USER_ID && (
-                            <div className={styles.commentOwnerActions}>
-                              <button
-                                className={styles.commentEditBtn}
-                                onClick={() => {
-                                  setEditingCommentId(r.commentId);
-                                  setReplyingTo(null);
-                                  setCommentText(r.content);
-                                  setTimeout(() => commentInputRef.current?.focus(), 50);
-                                }}
-                              >
-                                <svg
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                >
-                                  <path d="M12 20h9" />
-                                  <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                                </svg>
-                              </button>
-                              <button
-                                className={styles.commentDeleteBtn}
-                                onClick={() => handleReplyDelete(r.commentId, c.commentId)}
-                              >
-                                <svg
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                >
-                                  <line x1="18" y1="6" x2="6" y2="18" />
-                                  <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                              </button>
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
@@ -822,7 +794,7 @@ export default function BoardDetailPage() {
             ref={commentInputRef}
             className={styles.commentInput}
             placeholder={
-              editingCommentId ? '댓글 수정...' : replyingTo ? `@${replyingTo.username}에게 답글...` : '댓글 추가...'
+              editingCommentId ? '댓글 수정... (최대 500자)' : replyingTo ? `@${replyingTo.username}에게 답글... (최대 500자)` : '댓글 추가... (최대 500자)'
             }
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
@@ -832,7 +804,7 @@ export default function BoardDetailPage() {
                 handleCommentSubmit();
               }
             }}
-            maxLength={300}
+            maxLength={500}
           />
           <button
             className={`${styles.sendBtn} ${commentText.trim() ? styles.sendBtnActive : ''}`}
