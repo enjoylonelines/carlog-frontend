@@ -1,23 +1,23 @@
-"use client";
-import { useRef, useState, useEffect, useContext } from "react";
-import { useRouter } from "next/navigation";
-import styles from "./PostCard.module.css";
-import { AuthContext } from "../../../contexts/AuthContext";
-import { checkFollow, followUser, unfollowUser } from "../../../api";
-import { avatarColor as getAvatarColor } from "../../utils/avatar";
-import { followCache } from "../../utils/followCache";
-import { createLike, deleteLike } from "@/api/like";
+'use client';
+import { useRef, useState, useEffect, useContext } from 'react';
+import { useRouter } from 'next/navigation';
+import styles from './PostCard.module.css';
+import { AuthContext } from '../../../contexts/AuthContext';
+import { checkFollow, followUser, unfollowUser } from '../../../api';
+import { avatarColor as getAvatarColor } from '../../utils/avatar';
+import { followCache } from '../../utils/followCache';
+import { createLike, deleteLike } from '@/api/like';
 
-const isSrc = (url) => !!url && (url.startsWith("/") || url.startsWith("http://") || url.startsWith("https://"));
+const isSrc = (url) => !!url && (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://'));
 
 function timeAgo(dateStr) {
-  if (!dateStr) return "";
+  if (!dateStr) return '';
   const diff = (Date.now() - new Date(dateStr)) / 1000;
-  if (diff < 60) return "방금 전";
+  if (diff < 60) return '방금 전';
   if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
   if (diff < 2592000) return `${Math.floor(diff / 86400)}일 전`;
-  return new Date(dateStr).toLocaleDateString("ko-KR");
+  return new Date(dateStr).toLocaleDateString('ko-KR');
 }
 
 export default function PostCard({ post }) {
@@ -97,7 +97,7 @@ export default function PostCard({ post }) {
     const nextIndex = Math.min(Math.max(currentMediaIndex + direction, 0), images.length - 1);
     list.scrollTo({
       left: nextIndex * list.clientWidth,
-      behavior: "smooth",
+      behavior: 'smooth',
     });
     setCurrentMediaIndex(nextIndex);
   };
@@ -117,7 +117,7 @@ export default function PostCard({ post }) {
         setLikes(data?.likeCount ?? 0);
       }
     } catch (err) {
-      console.error("좋아요 처리 실패", err);
+      console.error('좋아요 처리 실패', err);
     }
   };
 
@@ -126,32 +126,37 @@ export default function PostCard({ post }) {
       <div className={styles.header}>
         <div
           className={styles.avatarWrap}
-          onClick={() => router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)}
+          onClick={() => router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)}
+          onKeyDown={(e) => e.key === 'Enter' && router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
         >
           {isSrc(profileImageUrl) && profileImageUrl !== avatarErrSrc ? (
-            <img src={profileImageUrl} alt={username} className={styles.avatarImg} onError={() => setAvatarErrSrc(profileImageUrl)} />
+            <img
+              src={profileImageUrl}
+              alt={username}
+              className={styles.avatarImg}
+              onError={() => setAvatarErrSrc(profileImageUrl)}
+            />
           ) : (
             <div className={styles.avatar} style={{ background: color }}>
-              {(username || "U")[0].toUpperCase()}
+              {(username || 'U')[0].toUpperCase()}
             </div>
           )}
         </div>
         <div
           className={styles.meta}
-          onClick={() => router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)}
+          onClick={() => router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)}
+          onKeyDown={(e) => e.key === 'Enter' && router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
         >
-          <span className={styles.username}>{username || "알 수 없음"}</span>
+          <span className={styles.username}>{username || '알 수 없음'}</span>
           <span className={styles.time}>{timeAgo(createdAt)}</span>
         </div>
         {!isOwnPost && following !== null && (
-          <button className={`${styles.followBtn} ${following ? styles.following : ""}`} onClick={handleFollow}>
-            {following ? "팔로잉" : "팔로우"}
+          <button className={`${styles.followBtn} ${following ? styles.following : ''}`} onClick={handleFollow}>
+            {following ? '팔로잉' : '팔로우'}
           </button>
         )}
       </div>
@@ -161,7 +166,7 @@ export default function PostCard({ post }) {
         onClick={() => router.push(`/boards/${boardId}`)}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === "Enter" && router.push(`/boards/${boardId}`)}
+        onKeyDown={(e) => e.key === 'Enter' && router.push(`/boards/${boardId}`)}
       >
         {images.length > 0 && (
           <div className={styles.mediaFrame}>
@@ -169,12 +174,12 @@ export default function PostCard({ post }) {
               {images.map((url, index) => (
                 <div className={styles.imageWrap} key={`${url}-${index}`}>
                   <img
-                    src={isSrc(url) ? url : "/no-image.svg"}
+                    src={isSrc(url) ? url : '/no-image.svg'}
                     alt={`${username} 게시물 이미지 ${index + 1}`}
                     className={styles.image}
                     loading="lazy"
                     onError={(e) => {
-                      e.currentTarget.src = "/no-image.svg";
+                      e.currentTarget.src = '/no-image.svg';
                     }}
                   />
                 </div>
@@ -243,7 +248,7 @@ export default function PostCard({ post }) {
               {!expanded && isLong ? (
                 <>
                   {content.slice(0, 80)}
-                  {"... "}
+                  {'... '}
                   <button
                     className={styles.moreBtn}
                     onClick={(e) => {
@@ -267,8 +272,8 @@ export default function PostCard({ post }) {
                 width="14"
                 height="14"
                 viewBox="0 0 24 24"
-                fill={liked ? "#ef4444" : "none"}
-                stroke={liked ? "#ef4444" : "currentColor"}
+                fill={liked ? '#ef4444' : 'none'}
+                stroke={liked ? '#ef4444' : 'currentColor'}
                 strokeWidth="2"
               >
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />

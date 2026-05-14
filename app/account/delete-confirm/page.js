@@ -38,7 +38,16 @@ export default function DeleteConfirmPage() {
     <div className={styles.wrap}>
       <div className={styles.card}>
         <div className={styles.iconWrap}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--color-primary)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -46,22 +55,17 @@ export default function DeleteConfirmPage() {
         </div>
 
         <h1 className={styles.title}>탈퇴 방식 선택</h1>
-        <p className={styles.desc}>
-          탈퇴 방식을 선택해 주세요.
-        </p>
+        <p className={styles.desc}>탈퇴 방식을 선택해 주세요.</p>
 
         <div className={styles.optionGroup}>
           <div className={styles.option}>
             <h3 className={styles.optionTitle}>즉시 탈퇴</h3>
             <p className={styles.optionDesc}>
-              계정과 모든 데이터가 즉시 삭제됩니다.<br />
+              계정과 모든 데이터가 즉시 삭제됩니다.
+              <br />
               삭제된 데이터는 복구할 수 없습니다.
             </p>
-            <button
-              className={styles.btnDanger}
-              onClick={() => handleDelete(true)}
-              disabled={loading}
-            >
+            <button className={styles.btnDanger} onClick={() => handleDelete(true)} disabled={loading}>
               즉시 탈퇴
             </button>
           </div>
@@ -70,14 +74,8 @@ export default function DeleteConfirmPage() {
 
           <div className={styles.option}>
             <h3 className={styles.optionTitle}>탈퇴 처리 (보관)</h3>
-            <p className={styles.optionDesc}>
-              계정은 비활성화되고 데이터는 일정 기간 보관 후 삭제됩니다.
-            </p>
-            <button
-              className={styles.btnSoft}
-              onClick={() => handleDelete(false)}
-              disabled={loading}
-            >
+            <p className={styles.optionDesc}>계정은 비활성화되고 데이터는 일정 기간 보관 후 삭제됩니다.</p>
+            <button className={styles.btnSoft} onClick={() => handleDelete(false)} disabled={loading}>
               탈퇴 처리
             </button>
           </div>
@@ -85,11 +83,7 @@ export default function DeleteConfirmPage() {
 
         {error && <p className={styles.error}>{error}</p>}
 
-        <button
-          className={styles.btnCancel}
-          onClick={() => router.push('/account/delete')}
-          disabled={loading}
-        >
+        <button className={styles.btnCancel} onClick={() => router.push('/account/delete')} disabled={loading}>
           이전으로
         </button>
       </div>

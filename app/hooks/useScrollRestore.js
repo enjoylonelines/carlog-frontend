@@ -65,7 +65,9 @@ export function useScrollRestore(key) {
     if (!saved || saved === '0') return;
     isRestoringRef.current = true;
     scrollToBlocking(parseInt(saved, 10));
-    setTimeout(() => { isRestoringRef.current = false; }, 700);
+    setTimeout(() => {
+      isRestoringRef.current = false;
+    }, 700);
   }, [key]);
 
   return restoreScroll;

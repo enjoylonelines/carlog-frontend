@@ -36,7 +36,7 @@
 }
 
 .backBtn:hover {
-  background: #F0F0F0;
+  background: #f0f0f0;
 }
 
 .topTitle {
@@ -65,16 +65,18 @@
   cursor: pointer;
   color: var(--color-text-secondary);
   border-radius: 8px;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .actionBtn:hover {
-  background: #F0F0F0;
+  background: #f0f0f0;
   color: var(--color-text);
 }
 
 .deleteBtn:hover {
-  background: #FFF0F0;
+  background: #fff0f0;
   color: var(--color-primary);
 }
 
@@ -133,7 +135,10 @@
   font-weight: 600;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .followBtn.following {
@@ -143,7 +148,7 @@
 }
 
 .followBtn.following:hover {
-  background: #F5F5F5;
+  background: #f5f5f5;
 }
 
 /* 이미지 */
@@ -172,10 +177,12 @@
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.38);
-  color: #FFFFFF;
+  color: #ffffff;
   cursor: pointer;
   transform: translateY(-50%);
-  transition: background 0.15s, opacity 0.15s;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
 }
 
 .mediaArrow:hover:not(:disabled) {
@@ -204,7 +211,7 @@
   width: 100%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: #F0F0F0;
+  background: #f0f0f0;
   position: relative;
   scroll-snap-align: center;
   scroll-snap-stop: always;
@@ -262,7 +269,7 @@
 
 /* 댓글 섹션 */
 .commentSection {
-  border-top: 6px solid #F0F0F0;
+  border-top: 6px solid #f0f0f0;
   padding: 0 0 8px;
 }
 
@@ -347,11 +354,13 @@
   color: var(--color-text-secondary);
   border-radius: 50%;
   flex-shrink: 0;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .commentDeleteBtn:hover {
-  background: #FFF0F0;
+  background: #fff0f0;
   color: var(--color-primary);
 }
 
@@ -395,7 +404,7 @@
 
 .repliesList {
   padding-left: 54px;
-  border-left: 2px solid #F0F0F0;
+  border-left: 2px solid #f0f0f0;
   margin: 0 16px 4px;
 }
 
@@ -508,8 +517,8 @@
   justify-content: center;
   border: none;
   cursor: not-allowed;
-  background: #EBEBEB;
-  color: #ABABAB;
+  background: #ebebeb;
+  color: #ababab;
   flex-shrink: 0;
   transition: all 0.15s;
 }
@@ -545,7 +554,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .errorText {

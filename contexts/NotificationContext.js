@@ -1,7 +1,12 @@
 'use client';
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { AuthContext } from './AuthContext';
-import { getNotifications, markRead as apiMarkRead, markAllRead as apiMarkAllRead, subscribeNotifications } from '../api/notification';
+import {
+  getNotifications,
+  markRead as apiMarkRead,
+  markAllRead as apiMarkAllRead,
+  subscribeNotifications,
+} from '../api/notification';
 import { avatarColor } from '@/app/utils/avatar';
 
 export const NotificationContext = createContext({

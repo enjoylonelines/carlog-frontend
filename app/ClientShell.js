@@ -1,12 +1,12 @@
-"use client";
-import { useState } from "react";
-import Navbar from "./components/Navbar/Navbar";
-import BottomNav from "./components/BottomNav/BottomNav";
-import CreatePost from "./components/CreatePost/CreatePost";
-import AuthContextProvider from "@/contexts/AuthContext";
-import { markFeedStale } from "./utils/feedRefresh";
-import NotificationContextProvider from "@/contexts/NotificationContext";
-import styles from "./ClientShell.module.css";
+'use client';
+import { useState } from 'react';
+import Navbar from './components/Navbar/Navbar';
+import BottomNav from './components/BottomNav/BottomNav';
+import CreatePost from './components/CreatePost/CreatePost';
+import AuthContextProvider from '@/contexts/AuthContext';
+import { markFeedStale } from './utils/feedRefresh';
+import NotificationContextProvider from '@/contexts/NotificationContext';
+import styles from './ClientShell.module.css';
 
 export default function ClientShell({ children }) {
   const [showCreate, setShowCreate] = useState(false);

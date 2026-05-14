@@ -21,20 +21,15 @@ const MOCK_PROFILE = {
 function GridImage({ src, className }) {
   const [failed, setFailed] = useState(false);
   const imgSrc = !failed && isSrc(src) ? src : '/no-image.svg';
-  return (
-    <img
-      src={imgSrc}
-      alt=""
-      className={className}
-      onError={() => setFailed(true)}
-    />
-  );
+  return <img src={imgSrc} alt="" className={className} onError={() => setFailed(true)} />;
 }
 
 const GridIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" />
   </svg>
 );
 
@@ -99,7 +94,7 @@ export default function ProfileView() {
           loadPosts(pageRef.current + 1, true);
         }
       },
-      { rootMargin: '200px' }
+      { rootMargin: '200px' },
     );
 
     observer.observe(sentinel);
@@ -155,18 +150,28 @@ export default function ProfileView() {
         {profile.bio && (
           <p className={styles.bio}>
             {profile.bio.split('\n').map((line, i) => (
-              <span key={i}>{line}<br /></span>
+              <span key={i}>
+                {line}
+                <br />
+              </span>
             ))}
           </p>
         )}
 
         <div className={styles.actions}>
-          <button className={styles.actionBtn} onClick={() => setShowEdit(true)}>프로필 편집</button>
-          <button className={styles.actionBtn} onClick={() => {
-            navigator.clipboard.writeText(`${window.location.origin}/users/${myUserId}`);
-            setToast(true);
-            setTimeout(() => setToast(false), 2000);
-          }}>프로필 공유</button>
+          <button className={styles.actionBtn} onClick={() => setShowEdit(true)}>
+            프로필 편집
+          </button>
+          <button
+            className={styles.actionBtn}
+            onClick={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/users/${myUserId}`);
+              setToast(true);
+              setTimeout(() => setToast(false), 2000);
+            }}
+          >
+            프로필 공유
+          </button>
           {toast && <div className={styles.toast}>링크가 복사되었어요</div>}
         </div>
 
@@ -181,11 +186,7 @@ export default function ProfileView() {
         ) : (
           <div className={styles.grid}>
             {posts.map((post) => (
-              <button
-                key={post.boardId}
-                className={styles.cell}
-                onClick={() => router.push(`/boards/${post.boardId}`)}
-              >
+              <button key={post.boardId} className={styles.cell} onClick={() => router.push(`/boards/${post.boardId}`)}>
                 <GridImage src={post.mediaUrls?.[0]} className={styles.img} />
               </button>
             ))}

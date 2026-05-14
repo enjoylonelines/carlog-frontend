@@ -1,4 +1,4 @@
-import client from "./client";
+import client from './client';
 
 export const createLike = async (boardId) => {
   const res = await client.post(`/api/likes/${boardId}`);

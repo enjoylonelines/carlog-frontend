@@ -8,9 +8,17 @@ import styles from './CreatePost.module.css';
 const DEFAULT_TAGS = ['드라이브', '튜닝', '연비', '차박', '정비', 'BMW', '현대', '포르쉐'];
 
 const CameraIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-    <circle cx="12" cy="13" r="4"/>
+  <svg
+    width="28"
+    height="28"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+  >
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
   </svg>
 );
 
@@ -43,18 +51,14 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
   };
 
   const toggleTag = (tag) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   };
 
   const addCustomTag = () => {
     const tag = tagInput.trim().replace(/^#+/, '');
     if (!tag) return;
 
-    setSelectedTags((prev) => (
-      prev.includes(tag) ? prev : [...prev, tag]
-    ));
+    setSelectedTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
     setTagInput('');
   };
 
@@ -98,14 +102,16 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
         <div className={styles.handle} />
 
         <div className={styles.header}>
-          <button className={styles.cancelBtn} onClick={onClose}>취소</button>
+          <button className={styles.cancelBtn} onClick={onClose}>
+            취소
+          </button>
           <h2 className={styles.title}>{isEdit ? '게시물 수정' : '새 게시물'}</h2>
           <button
             className={`${styles.postBtn} ${canPost ? styles.postBtnActive : ''}`}
             onClick={handleSubmit}
             disabled={!canPost || submitting}
           >
-            {submitting ? (isEdit ? '저장 중' : '게시 중') : (isEdit ? '저장' : '게시')}
+            {submitting ? (isEdit ? '저장 중' : '게시 중') : isEdit ? '저장' : '게시'}
           </button>
         </div>
 
@@ -139,9 +145,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
               autoFocus
             />
             <div className={styles.charCount}>
-              <span style={{ color: content.length > 450 ? '#E03131' : undefined }}>
-                {content.length}
-              </span>
+              <span style={{ color: content.length > 450 ? '#E03131' : undefined }}>{content.length}</span>
               {' / 500'}
             </div>
           </div>
@@ -170,12 +174,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
             {selectedTags.length > 0 && (
               <div className={styles.selectedTags}>
                 {selectedTags.map((tag) => (
-                  <button
-                    key={tag}
-                    className={styles.selectedTag}
-                    onClick={() => toggleTag(tag)}
-                    type="button"
-                  >
+                  <button key={tag} className={styles.selectedTag} onClick={() => toggleTag(tag)} type="button">
                     #{tag}
                     <span aria-hidden="true">×</span>
                   </button>
