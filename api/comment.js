@@ -21,3 +21,8 @@ export const deleteComment = async (commentId) => {
   const res = await client.delete(`/api/comments/${commentId}`);
   return res?.data ?? null;
 };
+
+export const updateComment = async (commentId, content) => {
+  const res = await client.put(`/api/comments/${commentId}`, { content });
+  return res?.data ?? null;
+};
