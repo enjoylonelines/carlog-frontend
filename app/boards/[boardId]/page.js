@@ -17,6 +17,7 @@ import {
 } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
 import { BOARD_DELETED_EVENT, markFeedStale } from '../../utils/feedRefresh';
+import { likeCache } from '../../utils/likeCache';
 import styles from './page.module.css';
 import { createLike, deleteLike } from '@/api/like';
 
@@ -73,6 +74,7 @@ export default function BoardDetailPage() {
   const [totalCommentCount, setTotalCommentCount] = useState(0);
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(0);
+  const likePendingRef = useRef(false);
 
   const nextCursorRef = useRef(null);
   const isLoadingCommentsRef = useRef(false);
@@ -128,8 +130,9 @@ export default function BoardDetailPage() {
     nextCursorRef.current = null;
     Promise.all([getBoard(boardId), getComments(boardId, null)]).then(([boardData, commentData]) => {
       setBoard(boardData);
-      setLiked(boardData.isLike === 1);
-      setLikes(boardData.likecount);
+      const cached = likeCache[boardId];
+      setLiked(cached ? cached.liked : boardData.isLike === 1);
+      setLikes(cached ? cached.likes : boardData.likecount);
       setComments(commentData.comments);
       setHasMoreComments(commentData.hasNext);
       setTotalCommentCount(commentData.totalCount ?? 0);
@@ -176,22 +179,30 @@ export default function BoardDetailPage() {
       await unfollowUser({ userId: MY_USER_ID, targetId: board.userId });
     }
   };
-  // 좋아요 이벤트 함수
   const handleLike = async () => {
+    if (likePendingRef.current) return;
+    likePendingRef.current = true;
+
+    const nextLiked = !liked;
+    const nextLikes = nextLiked ? likes + 1 : likes - 1;
+    setLiked(nextLiked);
+    setLikes(nextLikes);
+    likeCache[boardId] = { liked: nextLiked, likes: nextLikes };
+
     try {
-      if (liked) {
-        const res = await deleteLike(boardId);
-
+      const res = nextLiked ? await createLike(boardId) : await deleteLike(boardId);
+      if (res) {
         setLiked(res.isLiked === 1);
         setLikes(res.likeCount);
-      } else {
-        const res = await createLike(boardId);
-
-        setLiked(res.isLiked === 1);
-        setLikes(res.likeCount);
+        likeCache[boardId] = { liked: res.isLiked === 1, likes: res.likeCount };
       }
     } catch (err) {
       console.error('좋아요 처리 실패', err);
+      setLiked(!nextLiked);
+      setLikes(likes);
+      likeCache[boardId] = { liked: !nextLiked, likes };
+    } finally {
+      likePendingRef.current = false;
     }
   };
 

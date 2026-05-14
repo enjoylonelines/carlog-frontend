@@ -161,7 +161,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                     e.preventDefault();
                     addCustomTag();
                   }

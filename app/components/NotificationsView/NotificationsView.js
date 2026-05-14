@@ -38,6 +38,15 @@ const CommentBadge = () => (
   </svg>
 );
 
+const PostBadge = () => (
+  <svg width="10" height="10" viewBox="0 0 24 24" fill="white" stroke="none">
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" />
+  </svg>
+);
+
 const TYPE_META = {
   FOLLOW: {
     label: '팔로우',
@@ -50,6 +59,12 @@ const TYPE_META = {
     badgeBg: '#E03131',
     Badge: CommentBadge,
     message: '댓글을 남겼습니다.',
+  },
+  NEW_POST: {
+    label: '새 게시글',
+    badgeBg: '#F76707',
+    Badge: PostBadge,
+    message: '게시글이 추가되었습니다.',
   },
 };
 
@@ -68,12 +83,16 @@ function toItem(n) {
   };
 }
 
-function NotifItem({ item, onRead }) {
+function NotifItem({ item, onRead, onReadBySenderAndType }) {
   const router = useRouter();
   const meta = TYPE_META[item.type] ?? TYPE_META.COMMENT;
 
   const handleClick = () => {
-    onRead(item.id);
+    if (item.type === 'NEW_POST') {
+      onReadBySenderAndType(item.senderId, 'NEW_POST');
+    } else {
+      onRead(item.id);
+    }
     if (item.type === 'FOLLOW') {
       router.push(`/users/${item.senderId}`);
     } else if (item.boardId) {
@@ -107,7 +126,7 @@ function NotifItem({ item, onRead }) {
 }
 
 export default function NotificationsView() {
-  const { items, unreadCount, markRead, markAllRead } = useContext(NotificationContext);
+  const { items, unreadCount, markRead, markAllRead, markReadBySenderAndType } = useContext(NotificationContext);
 
   const todayItems = items.filter((n) => Date.now() - new Date(n.createdAt) < 86400 * 1000);
   const olderItems = items.filter((n) => Date.now() - new Date(n.createdAt) >= 86400 * 1000);
@@ -127,7 +146,7 @@ export default function NotificationsView() {
         <section>
           <div className={styles.sectionLabel}>오늘</div>
           {todayItems.map((n) => (
-            <NotifItem key={n.id} item={n} onRead={markRead} />
+            <NotifItem key={n.id} item={n} onRead={markRead} onReadBySenderAndType={markReadBySenderAndType} />
           ))}
         </section>
       )}
@@ -136,7 +155,7 @@ export default function NotificationsView() {
         <section>
           <div className={styles.sectionLabel}>이번 주</div>
           {olderItems.map((n) => (
-            <NotifItem key={n.id} item={n} onRead={markRead} />
+            <NotifItem key={n.id} item={n} onRead={markRead} onReadBySenderAndType={markReadBySenderAndType} />
           ))}
         </section>
       )}
