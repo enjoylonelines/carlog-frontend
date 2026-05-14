@@ -31,7 +31,10 @@ export default function EditAccountPage() {
   const [originalLoginId, setOriginalLoginId] = useState('');
   const [originalEmail, setOriginalEmail] = useState('');
 
-  // 확인 비밀번호 에러
+  // 필드 에러
+  const [loginIdError, setLoginIdError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [usernameError, setUsernameError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
   useEffect(() => {
@@ -136,13 +139,6 @@ export default function EditAccountPage() {
       setUsernameError('');
     }
 
-    if (newPassword && !currentPassword) {
-      setCurrentPasswordError('현재 비밀번호를 입력해주세요.');
-      hasError = true;
-    } else {
-      setCurrentPasswordError('');
-    }
-
     if (newPassword && newPassword !== confirmPassword) {
       setConfirmPasswordError('비밀번호가 일치하지 않습니다.');
       hasError = true;
@@ -156,19 +152,18 @@ export default function EditAccountPage() {
     setSubmitting(true);
     try {
       const payload = { loginId, email, username, bio };
-      if (newPassword) {
-        payload.currentPassword = currentPassword;
-        payload.newPassword = newPassword;
-      }
+      if (newPassword) payload.newPassword = newPassword;
       await updateUserAccount(userId, payload);
       setSuccess('회원 정보가 성공적으로 수정되었습니다.');
       setOriginalLoginId(loginId);
       setOriginalEmail(email);
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setLoginIdStatus(null);
       setEmailStatus(null);
+      setLoginIdError('');
+      setEmailError('');
+      setUsernameError('');
     } catch (err) {
       setError(err?.serverMessage || '수정 중 오류가 발생했습니다. 다시 시도해 주세요.');
     } finally {
@@ -199,7 +194,7 @@ export default function EditAccountPage() {
                 className={`${styles.input} ${loginIdStatus === 'ok' ? styles.inputOk : loginIdStatus === 'dup' ? styles.inputErr : ''}`}
                 type="text"
                 value={loginId}
-                onChange={(e) => { setLoginId(e.target.value); setLoginIdStatus(null); }}
+                onChange={(e) => { setLoginId(e.target.value); setLoginIdStatus(null); setLoginIdError(''); }}
                 autoComplete="username"
               />
               <button type="button" className={styles.checkBtn} onClick={handleCheckLoginId}>
@@ -208,6 +203,7 @@ export default function EditAccountPage() {
             </div>
             {loginIdStatus === 'ok' && <span className={styles.msgOk}>사용 가능한 아이디입니다.</span>}
             {loginIdStatus === 'dup' && <span className={styles.msgErr}>이미 사용 중인 아이디입니다.</span>}
+            {!loginIdStatus && loginIdError && <span className={styles.msgErr}>{loginIdError}</span>}
           </div>
 
           {/* 이메일 */}
@@ -218,7 +214,7 @@ export default function EditAccountPage() {
                 className={`${styles.input} ${emailStatus === 'ok' ? styles.inputOk : emailStatus === 'dup' ? styles.inputErr : ''}`}
                 type="email"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); setEmailStatus(null); }}
+                onChange={(e) => { setEmail(e.target.value); setEmailStatus(null); setEmailError(''); }}
                 autoComplete="email"
               />
               <button type="button" className={styles.checkBtn} onClick={handleCheckEmail}>
@@ -227,6 +223,7 @@ export default function EditAccountPage() {
             </div>
             {emailStatus === 'ok' && <span className={styles.msgOk}>사용 가능한 이메일입니다.</span>}
             {emailStatus === 'dup' && <span className={styles.msgErr}>이미 사용 중인 이메일입니다.</span>}
+            {!emailStatus && emailError && <span className={styles.msgErr}>{emailError}</span>}
           </div>
 
           {/* 닉네임 */}
@@ -236,8 +233,9 @@ export default function EditAccountPage() {
               className={styles.input}
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => { setUsername(e.target.value); setUsernameError(''); }}
             />
+            {usernameError && <span className={styles.msgErr}>{usernameError}</span>}
           </div>
 
           {/* 소개 */}

@@ -1,7 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ClientShell from "./ClientShell";
-import AxiosConfig from "@/apis/AxiosConfig";
+import AxiosConfig from "@/api/AxiosConfig";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

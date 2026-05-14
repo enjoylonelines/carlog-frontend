@@ -1,6 +1,6 @@
 "use client"
 
-import { addAuthHeader, removeAuthHeader } from "@/apis/AxiosConfig";
+import { addAuthHeader, removeAuthHeader } from "@/api/AxiosConfig";
 import { createContext, startTransition, useEffect, useState } from "react";
 
 // 컴포넌트에서 AuthContext를 사용하므로 export 해야함

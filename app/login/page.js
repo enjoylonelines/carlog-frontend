@@ -2,7 +2,7 @@
 import { useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/contexts/AuthContext";
-import authApi from "@/apis/authApi";
+import authApi from "@/api/authApi";
 import styles from "./page.module.css";
 
 export default function LoginPage() {
