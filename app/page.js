@@ -90,7 +90,13 @@ export default function FeedPage() {
     if (boards?.length) {
       const mapped = boards.map(mapBoard);
       setPosts((prev) => {
-        const next = append ? [...prev, ...mapped] : mapped;
+        const merged = append ? [...prev, ...mapped] : mapped;
+        const seen = new Set();
+        const next = merged.filter((p) => {
+          if (seen.has(p.boardId)) return false;
+          seen.add(p.boardId);
+          return true;
+        });
         if (!selectedTag && !keyword) _cachedPosts = next;
         return next;
       });
