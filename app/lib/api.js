@@ -98,7 +98,7 @@ export const deleteUser = (userId, immediate = false) =>
 
 export const updateUserAccount = (userId, data) =>
   request(`/api/users/${userId}/account`, {
-    method: 'PATCH',
+    method: 'PUT',
     body: JSON.stringify(data),
   });
 
