@@ -1,0 +1,83 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px 24px 20px;
+  width: min(340px, 90vw);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  text-align: center;
+}
+
+.title {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.message {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  color: #333;
+  line-height: 1.5;
+}
+
+.timer {
+  font-weight: 700;
+  color: #e53e3e;
+}
+
+.sub {
+  margin: 0 0 20px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.logoutBtn {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: #e53e3e;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.logoutBtn:hover {
+  background: #c53030;
+}
+
+.dismissBtn {
+  flex: 1;
+  padding: 10px 0;
+  border: 1.5px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  color: #333;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dismissBtn:hover {
+  background: #f5f5f5;
+}

@@ -4,6 +4,7 @@ import Navbar from "./components/Navbar/Navbar";
 import BottomNav from "./components/BottomNav/BottomNav";
 import CreatePost from "./components/CreatePost/CreatePost";
 import AuthContextProvider from "@/contexts/AuthContext";
+import TokenExpirationWarning from "@/components/TokenExpirationWarning/TokenExpirationWarning";
 import { markFeedStale } from "./utils/feedRefresh";
 import styles from "./ClientShell.module.css";
 
@@ -19,6 +20,7 @@ export default function ClientShell({ children }) {
       <Navbar />
       <main className={styles.main}>{children}</main>
       <BottomNav onCreateClick={() => setShowCreate(true)} />
+      <TokenExpirationWarning />
 
         
       {showCreate && (

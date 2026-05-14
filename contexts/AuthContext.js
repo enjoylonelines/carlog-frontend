@@ -1,7 +1,21 @@
 "use client"
 
 import { addAuthHeader, removeAuthHeader } from "@/api/AxiosConfig";
-import { createContext, startTransition, useEffect, useState } from "react";
+import { createContext, startTransition, useCallback, useEffect, useRef, useState } from "react";
+
+// JWT 페이로드에서 만료 시각(ms)을 추출
+function parseJwtExpiry(token) {
+    if (!token) return null;
+    try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        return payload.exp ? payload.exp * 1000 : null;
+    } catch {
+        return null;
+    }
+}
+
+// 만료 경고를 표시할 기준 (5분 전)
+const WARN_BEFORE_MS = 5 * 60 * 1000;
 
 // 컴포넌트에서 AuthContext를 사용하므로 export 해야함
 export const AuthContext = createContext();
@@ -14,6 +28,20 @@ function AuthContextProvider({ children }) {
     const [userId, setUserId] = useState(null);
     // Axios 설정 중에 UI가 나오지 않도록 하는 플래그 변수
     const [isLoading, setIsLoading] = useState(true);
+    // 토큰 만료 관련 상태
+    const [tokenExpiresAt, setTokenExpiresAt] = useState(null);
+    const [showExpiryWarning, setShowExpiryWarning] = useState(false);
+    const warnTimerRef = useRef(null);
+    const expireTimerRef = useRef(null);
+
+    // 로그아웃 함수 (Context에서 통합 관리)
+    const logout = useCallback(() => {
+        setUser("");
+        setAccessToken("");
+        setUserId(null);
+        setTokenExpiresAt(null);
+        setShowExpiryWarning(false);
+    }, []);
 
     // Context를 통해서 제공할 전역 객체
     const value = {
@@ -23,6 +51,10 @@ function AuthContextProvider({ children }) {
         setAccessToken,
         userId,
         setUserId,
+        tokenExpiresAt,
+        showExpiryWarning,
+        setShowExpiryWarning,
+        logout,
     };
 
     // 브라우저가 리프레쉬되었을 때(애플리케이션이 다시 시작할때) 실행되는 자동 콜백 함수 등록
@@ -46,6 +78,55 @@ function AuthContextProvider({ children }) {
             setIsLoading(false);
         });
     }, []);
+
+    // accessToken이 변경될 때 만료 타이머 등록
+    useEffect(() => {
+        // 기존 타이머 클리어
+        clearTimeout(warnTimerRef.current);
+        clearTimeout(expireTimerRef.current);
+        setShowExpiryWarning(false);
+
+        if (!accessToken) {
+            setTokenExpiresAt(null);
+            return;
+        }
+
+        const expiresAt = parseJwtExpiry(accessToken);
+        setTokenExpiresAt(expiresAt);
+
+        if (!expiresAt) return;
+
+        const now = Date.now();
+        const msUntilWarn = expiresAt - now - WARN_BEFORE_MS;
+        const msUntilExpire = expiresAt - now;
+
+        // 이미 만료된 경우 즉시 로그아웃
+        if (msUntilExpire <= 0) {
+            logout();
+            return;
+        }
+
+        // 만료 5분 전: 경고 표시
+        if (msUntilWarn > 0) {
+            warnTimerRef.current = setTimeout(() => {
+                setShowExpiryWarning(true);
+            }, msUntilWarn);
+        } else {
+            // 이미 5분 이내 → 즉시 경고 표시
+            setShowExpiryWarning(true);
+        }
+
+        // 만료 시각: 자동 로그아웃
+        expireTimerRef.current = setTimeout(() => {
+            setShowExpiryWarning(false);
+            logout();
+        }, msUntilExpire);
+
+        return () => {
+            clearTimeout(warnTimerRef.current);
+            clearTimeout(expireTimerRef.current);
+        };
+    }, [accessToken, logout]);
 
     // 로그인/로그아웃으로 상태가 변경되었을 때 실행되는 자동 콜백 함수 등록
     useEffect(() => {

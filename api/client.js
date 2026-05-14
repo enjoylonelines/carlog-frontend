@@ -15,6 +15,20 @@ instance.interceptors.request.use((config) => {
   return config;
 });
 
+// 401 응답 인터셉터: 토큰 만료 시 강제 로그아웃 후 로그인 페이지로 이동
+instance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("user");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("userId");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
 // GET 응답 메모리 캐시 (TTL 없음 — 변이 요청 시 무효화)
 const cache = new Map();
 
