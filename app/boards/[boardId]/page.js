@@ -14,6 +14,7 @@ import {
   followUser,
   unfollowUser,
   getUserProfile,
+  updateComment,
 } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
 import { BOARD_DELETED_EVENT, markFeedStale } from '../../utils/feedRefresh';
@@ -82,6 +83,7 @@ export default function BoardDetailPage() {
 
   // 대댓글 상태
   const [replyingTo, setReplyingTo] = useState(null); // { commentId, username }
+  const [editingCommentId, setEditingCommentId] = useState(null);
   const [expandedReplies, setExpandedReplies] = useState(new Set());
   const [repliesCache, setRepliesCache] = useState({});
   const [loadingReplies, setLoadingReplies] = useState(new Set());
@@ -228,52 +230,74 @@ export default function BoardDetailPage() {
     isSubmittingRef.current = true;
     setSubmitting(true);
 
-    const currentReplyingTo = replyingTo; // 클로저 스냅샷
-    const payload = {
-      boardId: Number(boardId),
-      userId: MY_USER_ID,
-      content: commentText,
-      parentCommentId: currentReplyingTo ? currentReplyingTo.commentId : null,
-    };
+    try {
+      if (editingCommentId) {
+        const res = await updateComment(editingCommentId, commentText);
+        if (res) {
+          setComments((prev) =>
+            prev.map((c) => (c.commentId === editingCommentId ? { ...c, content: res.content } : c)),
+          );
 
-    const result = await createComment(payload);
-    if (!result) {
+          setRepliesCache((prev) => {
+            const next = { ...prev };
+            Object.keys(next).forEach((key) => {
+              next[key] = next[key].map((r) => (r.commentId === editingCommentId ? { ...r, content: res.content } : r));
+            });
+            return next;
+          });
+        }
+
+        setEditingCommentId(null);
+        setCommentText('');
+        return;
+      }
+
+      const currentReplyingTo = replyingTo; // 클로저 스냅숏
+      const payload = {
+        boardId: Number(boardId),
+        userId: MY_USER_ID,
+        content: commentText,
+        parentCommentId: currentReplyingTo ? currentReplyingTo.commentId : null,
+      };
+
+      const result = await createComment(payload);
+      if (!result) return;
+      sessionStorage.setItem('feed_stale', '1');
+
+      const newEntry = {
+        commentId: result.commentId,
+        userId: MY_USER_ID,
+        username: myUsername,
+        content: commentText,
+        createdAt: new Date().toISOString(),
+        replyCount: 0,
+        parentCommentId: currentReplyingTo?.commentId ?? null,
+      };
+
+      if (currentReplyingTo) {
+        const parentId = currentReplyingTo.commentId;
+        setComments((prev) =>
+          prev.map((c) => (c.commentId === parentId ? { ...c, replyCount: (c.replyCount || 0) + 1 } : c)),
+        );
+        setRepliesCache((prev) => ({
+          ...prev,
+          [parentId]: [...(prev[parentId] || []), newEntry],
+        }));
+        setExpandedReplies((prev) => new Set([...prev, parentId]));
+        setReplyingTo(null);
+        setTotalCommentCount((prev) => prev + 1);
+      } else {
+        setComments((prev) => [newEntry, ...prev]);
+        setTotalCommentCount((prev) => prev + 1);
+      }
+
+      setCommentText('');
+    } catch (err) {
+      console.error('댓글 작성/수정 실패', err);
+    } finally {
       isSubmittingRef.current = false;
       setSubmitting(false);
-      return;
     }
-    sessionStorage.setItem('feed_stale', '1');
-
-    const newEntry = {
-      commentId: result.commentId,
-      userId: MY_USER_ID,
-      username: myUsername,
-      content: commentText,
-      createdAt: new Date().toISOString(),
-      replyCount: 0,
-      parentCommentId: currentReplyingTo?.commentId ?? null,
-    };
-
-    if (currentReplyingTo) {
-      const parentId = currentReplyingTo.commentId;
-      setComments((prev) =>
-        prev.map((c) => (c.commentId === parentId ? { ...c, replyCount: (c.replyCount || 0) + 1 } : c)),
-      );
-      setRepliesCache((prev) => ({
-        ...prev,
-        [parentId]: [...(prev[parentId] || []), newEntry],
-      }));
-      setExpandedReplies((prev) => new Set([...prev, parentId]));
-      setReplyingTo(null);
-      setTotalCommentCount((prev) => prev + 1);
-    } else {
-      setComments((prev) => [newEntry, ...prev]);
-      setTotalCommentCount((prev) => prev + 1);
-    }
-
-    setCommentText('');
-    isSubmittingRef.current = false;
-    setSubmitting(false);
   };
 
   const handleCommentDelete = async (commentId) => {
@@ -281,6 +305,10 @@ export default function BoardDetailPage() {
     sessionStorage.setItem('feed_stale', '1');
     setComments((prev) => prev.filter((c) => c.commentId !== commentId));
     setTotalCommentCount((prev) => Math.max(0, prev - 1));
+    if (editingCommentId === commentId) {
+      setEditingCommentId(null);
+      setCommentText('');
+    }
     // 대댓글 캐시에서도 제거
     setRepliesCache((prev) => {
       const next = { ...prev };
@@ -295,6 +323,10 @@ export default function BoardDetailPage() {
       ...prev,
       [parentId]: (prev[parentId] || []).filter((r) => r.commentId !== replyId),
     }));
+    if (editingCommentId === replyId) {
+      setEditingCommentId(null);
+      setCommentText('');
+    }
     setComments((prev) =>
       prev.map((c) => (c.commentId === parentId ? { ...c, replyCount: Math.max(0, (c.replyCount || 1) - 1) } : c)),
     );
@@ -330,6 +362,8 @@ export default function BoardDetailPage() {
   };
 
   const startReply = (comment) => {
+    setEditingCommentId(null);
+    setCommentText('');
     setReplyingTo({
       commentId: comment.commentId,
       username: comment.username || `user${comment.userId}`,
@@ -590,20 +624,44 @@ export default function BoardDetailPage() {
                       </div>
                     </div>
                     {c.userId === MY_USER_ID && (
-                      <button className={styles.commentDeleteBtn} onClick={() => handleCommentDelete(c.commentId)}>
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
+                      <div className={styles.commentOwnerActions}>
+                        <button
+                          className={styles.commentEditBtn}
+                          onClick={() => {
+                            setEditingCommentId(c.commentId);
+                            setReplyingTo(null);
+                            setCommentText(c.content);
+                            setTimeout(() => commentInputRef.current?.focus(), 50);
+                          }}
                         >
-                          <line x1="18" y1="6" x2="6" y2="18" />
-                          <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                      </button>
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          >
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                          </svg>
+                        </button>
+                        <button className={styles.commentDeleteBtn} onClick={() => handleCommentDelete(c.commentId)}>
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          >
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -627,23 +685,47 @@ export default function BoardDetailPage() {
                             <p className={styles.commentText}>{r.content}</p>
                           </div>
                           {r.userId === MY_USER_ID && (
-                            <button
-                              className={styles.commentDeleteBtn}
-                              onClick={() => handleReplyDelete(r.commentId, c.commentId)}
-                            >
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
+                            <div className={styles.commentOwnerActions}>
+                              <button
+                                className={styles.commentEditBtn}
+                                onClick={() => {
+                                  setEditingCommentId(r.commentId);
+                                  setReplyingTo(null);
+                                  setCommentText(r.content);
+                                  setTimeout(() => commentInputRef.current?.focus(), 50);
+                                }}
                               >
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                              </svg>
-                            </button>
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                >
+                                  <path d="M12 20h9" />
+                                  <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                                </svg>
+                              </button>
+                              <button
+                                className={styles.commentDeleteBtn}
+                                onClick={() => handleReplyDelete(r.commentId, c.commentId)}
+                              >
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                >
+                                  <line x1="18" y1="6" x2="6" y2="18" />
+                                  <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                              </button>
+                            </div>
                           )}
                         </div>
                       ))}
@@ -659,12 +741,23 @@ export default function BoardDetailPage() {
         </div>
       </div>
 
-      {/* 댓글/답글 입력 바 */}
+      {/* 댓글/답글/수정 입력 바 */}
       <div className={styles.commentBar}>
-        {replyingTo && (
+        {(replyingTo || editingCommentId) && (
           <div className={styles.replyingToBar}>
-            <span className={styles.replyingToText}>@{replyingTo.username}에게 답글 작성 중</span>
-            <button className={styles.cancelReplyBtn} onClick={cancelReply}>
+            {editingCommentId ? (
+              <span className={styles.replyingToText}>댓글 수정 중</span>
+            ) : (
+              <span className={styles.replyingToText}>@{replyingTo.username}에게 답글 작성 중</span>
+            )}
+            <button
+              className={styles.cancelReplyBtn}
+              onClick={() => {
+                setReplyingTo(null);
+                setEditingCommentId(null);
+                setCommentText('');
+              }}
+            >
               ✕
             </button>
           </div>
@@ -680,7 +773,9 @@ export default function BoardDetailPage() {
           <input
             ref={commentInputRef}
             className={styles.commentInput}
-            placeholder={replyingTo ? `@${replyingTo.username}에게 답글...` : '댓글 추가...'}
+            placeholder={
+              editingCommentId ? '댓글 수정...' : replyingTo ? `@${replyingTo.username}에게 답글...` : '댓글 추가...'
+            }
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             onKeyDown={(e) => {
