@@ -89,12 +89,24 @@ export default function BoardDetailPage() {
   const [expandedReplies, setExpandedReplies] = useState(new Set());
   const [repliesCache, setRepliesCache] = useState({});
   const [loadingReplies, setLoadingReplies] = useState(new Set());
+  const [loadedReplyParents, setLoadedReplyParents] = useState(new Set());
 
   const commentInputRef = useRef(null);
   const mediaListRef = useRef(null);
 
   const mediaUrls = board?.mediaUrls || [];
   const firstImageUrl = mediaUrls.length > 0 ? mediaUrl(mediaUrls[0]) : '/no-image.svg';
+
+  const mergeReplies = (existing, fetched) => {
+    const existingList = Array.isArray(existing) ? existing : [];
+    const fetchedList = Array.isArray(fetched) ? fetched : [];
+    const merged = [...existingList, ...fetchedList];
+    const unique = new Map();
+    for (const reply of merged) {
+      unique.set(reply.commentId, reply);
+    }
+    return Array.from(unique.values());
+  };
   const isOwner = board?.userId === MY_USER_ID;
   const boardUserId = board?.userId;
   const isPageLoading = loading || (board && String(board.boardId) !== String(boardId));
@@ -138,6 +150,9 @@ export default function BoardDetailPage() {
       setComments(commentData.comments);
       setHasMoreComments(commentData.hasNext);
       setTotalCommentCount(commentData.totalCount ?? 0);
+      setExpandedReplies(new Set());
+      setRepliesCache({});
+      setLoadedReplyParents(new Set());
       nextCursorRef.current = commentData.nextCursor ?? null;
       setCurrentMediaIndex(0);
       setLoading(false);
@@ -290,10 +305,31 @@ export default function BoardDetailPage() {
         setComments((prev) =>
           prev.map((c) => (c.commentId === parentId ? { ...c, replyCount: (c.replyCount || 0) + 1 } : c)),
         );
-        setRepliesCache((prev) => ({
-          ...prev,
-          [parentId]: [...(prev[parentId] || []), newEntry],
-        }));
+
+        if (repliesCache[parentId]) {
+          setRepliesCache((prev) => ({
+            ...prev,
+            [parentId]: mergeReplies(prev[parentId], [newEntry]),
+          }));
+          setLoadedReplyParents((prev) => new Set(prev).add(parentId));
+        } else {
+          setLoadingReplies((prev) => new Set([...prev, parentId]));
+          const existingReplies = await getReplies(boardId, parentId);
+          setRepliesCache((prev) => ({
+            ...prev,
+            [parentId]: mergeReplies(prev[parentId], [
+              ...(Array.isArray(existingReplies) ? existingReplies : []),
+              newEntry,
+            ]),
+          }));
+          setLoadingReplies((prev) => {
+            const next = new Set(prev);
+            next.delete(parentId);
+            return next;
+          });
+          setLoadedReplyParents((prev) => new Set(prev).add(parentId));
+        }
+
         setExpandedReplies((prev) => new Set([...prev, parentId]));
         setReplyingTo(null);
         setTotalCommentCount((prev) => prev + 1);
@@ -355,18 +391,19 @@ export default function BoardDetailPage() {
     }
 
     // 아직 로드 안 된 경우 fetch
-    if (!repliesCache[commentId]) {
+    if (!loadedReplyParents.has(commentId)) {
       setLoadingReplies((prev) => new Set([...prev, commentId]));
       const data = await getReplies(boardId, commentId);
       setRepliesCache((prev) => ({
         ...prev,
-        [commentId]: Array.isArray(data) ? data : [],
+        [commentId]: mergeReplies(prev[commentId], Array.isArray(data) ? data : []),
       }));
       setLoadingReplies((prev) => {
         const next = new Set(prev);
         next.delete(commentId);
         return next;
       });
+      setLoadedReplyParents((prev) => new Set(prev).add(commentId));
     }
 
     setExpandedReplies((prev) => new Set([...prev, commentId]));
