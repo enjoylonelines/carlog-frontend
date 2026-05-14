@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getUserProfile, updateUserAccount, checkLoginIdAvailable, checkEmailAvailable } from '../../lib/api';
+import { getUserProfile, updateUserAccount, checkLoginIdAvailable, checkEmailAvailable } from '../../../api/user';
 import styles from './page.module.css';
 
 export default function EditAccountPage() {
@@ -26,7 +26,13 @@ export default function EditAccountPage() {
   const [originalLoginId, setOriginalLoginId] = useState('');
   const [originalEmail, setOriginalEmail] = useState('');
 
-  // 확인 비밀번호 에러
+  const [currentPassword, setCurrentPassword] = useState('');
+
+  // 필드별 에러 메시지
+  const [loginIdError, setLoginIdError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [currentPasswordError, setCurrentPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
   useEffect(() => {

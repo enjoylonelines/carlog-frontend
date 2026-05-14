@@ -2,7 +2,7 @@
 import { useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '@/contexts/AuthContext';
-import { deleteUser } from '../../lib/api';
+import { deleteUser } from '../../../api/user';
 import styles from './page.module.css';
 
 export default function DeleteConfirmPage() {
