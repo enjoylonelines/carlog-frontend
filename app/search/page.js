@@ -53,17 +53,15 @@ export default function SearchPage() {
   useEffect(() => {
     if (!q.trim()) return;
     setLoading(true);
-    Promise.all([
-      searchUsers(q),
-      getHashtags(q),
-      searchBoards({ keyword: q }),
-    ]).then(([usersData, tagsData, boardsData]) => {
-      setUsers(Array.isArray(usersData) ? usersData : []);
-      setTags(Array.isArray(tagsData) ? tagsData : []);
-      const raw = boardsData?.boards ?? [];
-      setBoards(raw.map(mapBoard));
-      setLoading(false);
-    });
+    Promise.all([searchUsers(q), getHashtags(q), searchBoards({ keyword: q })]).then(
+      ([usersData, tagsData, boardsData]) => {
+        setUsers(Array.isArray(usersData) ? usersData : []);
+        setTags(Array.isArray(tagsData) ? tagsData : []);
+        const raw = boardsData?.boards ?? [];
+        setBoards(raw.map(mapBoard));
+        setLoading(false);
+      },
+    );
   }, [q]);
 
   // 데이터 로드 완료 후 스크롤 복원 (q당 1회)
@@ -94,7 +92,15 @@ export default function SearchPage() {
     <div className={styles.wrap}>
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => router.replace('/explore')}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
             <path d="M19 12H5M12 5l-7 7 7 7" />
           </svg>
         </button>
@@ -117,13 +123,16 @@ export default function SearchPage() {
       </div>
 
       {loading ? (
-        <div className={styles.spinnerWrap}><div className={styles.spinner} /></div>
+        <div className={styles.spinnerWrap}>
+          <div className={styles.spinner} />
+        </div>
       ) : (
         <div className={styles.results}>
-          {activeTab === 'users' && (
-            users.length === 0
-              ? <p className={styles.noResult}>일치하는 사람이 없어요.</p>
-              : users.map((user) => (
+          {activeTab === 'users' &&
+            (users.length === 0 ? (
+              <p className={styles.noResult}>일치하는 사람이 없어요.</p>
+            ) : (
+              users.map((user) => (
                 <button
                   key={user.userId}
                   className={styles.userRow}
@@ -138,29 +147,31 @@ export default function SearchPage() {
                   </div>
                 </button>
               ))
-          )}
+            ))}
 
-          {activeTab === 'tags' && (
-            tags.length === 0
-              ? <p className={styles.noResult}>일치하는 태그가 없어요.</p>
-              : <div className={styles.tagGrid}>
-                  {tags.map((tag) => (
-                    <button
-                      key={tag.hashtagId ?? tag.tagName}
-                      className={styles.tagChip}
-                      onClick={() => router.push(`/explore?tag=${encodeURIComponent(tag.tagName)}`)}
-                    >
-                      #{tag.tagName}
-                    </button>
-                  ))}
-                </div>
-          )}
+          {activeTab === 'tags' &&
+            (tags.length === 0 ? (
+              <p className={styles.noResult}>일치하는 태그가 없어요.</p>
+            ) : (
+              <div className={styles.tagGrid}>
+                {tags.map((tag) => (
+                  <button
+                    key={tag.hashtagId ?? tag.tagName}
+                    className={styles.tagChip}
+                    onClick={() => router.push(`/explore?tag=${encodeURIComponent(tag.tagName)}`)}
+                  >
+                    #{tag.tagName}
+                  </button>
+                ))}
+              </div>
+            ))}
 
-          {activeTab === 'boards' && (
-            boards.length === 0
-              ? <p className={styles.noResult}>일치하는 게시물이 없어요.</p>
-              : boards.map((post) => <PostCard key={post.boardId} post={post} />)
-          )}
+          {activeTab === 'boards' &&
+            (boards.length === 0 ? (
+              <p className={styles.noResult}>일치하는 게시물이 없어요.</p>
+            ) : (
+              boards.map((post) => <PostCard key={post.boardId} post={post} />)
+            ))}
         </div>
       )}
     </div>

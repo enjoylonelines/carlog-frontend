@@ -16,7 +16,7 @@ export default function StoriesBar() {
   return (
     <section className={styles.section}>
       <div className={styles.track}>
-        {MOCK_USERS.map(user => (
+        {MOCK_USERS.map((user) => (
           <button key={user.id} className={styles.story}>
             <div className={`${styles.ring} ${user.ring ? styles.ringActive : ''}`}>
               <div className={styles.avatar} style={{ background: user.color }}>

@@ -43,32 +43,35 @@ export default function ExploreGrid() {
     });
   }, []);
 
-  const loadMore = useCallback(async (page, append) => {
-    if (isLoadingRef.current) return;
-    isLoadingRef.current = true;
-    setLoading(true);
+  const loadMore = useCallback(
+    async (page, append) => {
+      if (isLoadingRef.current) return;
+      isLoadingRef.current = true;
+      setLoading(true);
 
-    const data = await getExploreBoards(page);
-    isLoadingRef.current = false;
-    setLoading(false);
+      const data = await getExploreBoards(page);
+      isLoadingRef.current = false;
+      setLoading(false);
 
-    const boards = data?.boards ?? [];
-    setItems((prev) => {
-      const next = append ? [...prev, ...boards] : boards;
-      _cachedItems = next;
-      return next;
-    });
-    const more = data?.hasNext ?? false;
-    setHasNext(more);
-    _cachedHasNext = more;
-    _cachedPage = page;
-    pageRef.current = page;
+      const boards = data?.boards ?? [];
+      setItems((prev) => {
+        const next = append ? [...prev, ...boards] : boards;
+        _cachedItems = next;
+        return next;
+      });
+      const more = data?.hasNext ?? false;
+      setHasNext(more);
+      _cachedHasNext = more;
+      _cachedPage = page;
+      pageRef.current = page;
 
-    if (!append && !selectedTag && !scrollRestoredRef.current) {
-      scrollRestoredRef.current = true;
-      scrollPendingRef.current = true;
-    }
-  }, [restoreScroll, selectedTag]);
+      if (!append && !selectedTag && !scrollRestoredRef.current) {
+        scrollRestoredRef.current = true;
+        scrollPendingRef.current = true;
+      }
+    },
+    [restoreScroll, selectedTag],
+  );
 
   useEffect(() => {
     if (_cachedItems.length > 0) return;
@@ -92,23 +95,24 @@ export default function ExploreGrid() {
           loadMore(pageRef.current + 1, true);
         }
       },
-      { rootMargin: '200px' }
+      { rootMargin: '200px' },
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [hasNext, loadMore, items.length]);
 
-  const handleTagSelect = useCallback((tag) => {
-    if (tag === selectedTag) {
-      router.replace('/explore', { scroll: false });
-    } else {
-      router.replace(`/explore?tag=${encodeURIComponent(tag)}`, { scroll: false });
-    }
-  }, [selectedTag, router]);
+  const handleTagSelect = useCallback(
+    (tag) => {
+      if (tag === selectedTag) {
+        router.replace('/explore', { scroll: false });
+      } else {
+        router.replace(`/explore?tag=${encodeURIComponent(tag)}`, { scroll: false });
+      }
+    },
+    [selectedTag, router],
+  );
 
-  const displayed = selectedTag
-    ? items.filter((b) => b.hashtags?.includes(selectedTag))
-    : items;
+  const displayed = selectedTag ? items.filter((b) => b.hashtags?.includes(selectedTag)) : items;
 
   return (
     <>
@@ -129,7 +133,9 @@ export default function ExploreGrid() {
                   alt={tag ? `#${tag}` : '게시물'}
                   className={styles.img}
                   loading="lazy"
-                  onError={(e) => { e.currentTarget.src = '/no-image.svg'; }}
+                  onError={(e) => {
+                    e.currentTarget.src = '/no-image.svg';
+                  }}
                 />
                 <div className={styles.overlay}>
                   {tag && <span className={styles.overlayTag}>#{tag}</span>}

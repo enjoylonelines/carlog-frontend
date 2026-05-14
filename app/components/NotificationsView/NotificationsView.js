@@ -8,14 +8,7 @@ import styles from './NotificationsView.module.css';
 function NotifAvatar({ src, fallbackColor, username }) {
   const [errSrc, setErrSrc] = useState(null);
   if (src && src !== errSrc) {
-    return (
-      <img
-        src={src}
-        alt={username}
-        className={styles.avatarImg}
-        onError={() => setErrSrc(src)}
-      />
-    );
+    return <img src={src} alt={username} className={styles.avatarImg} onError={() => setErrSrc(src)} />;
   }
   return (
     <div className={styles.avatar} style={{ background: fallbackColor }}>
@@ -35,19 +28,29 @@ function timeAgo(dateStr) {
 
 const FollowBadge = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="white" stroke="none">
-    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
   </svg>
 );
 
 const CommentBadge = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="white" stroke="none">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
   </svg>
 );
 
 const TYPE_META = {
-  FOLLOW:  { label: '팔로우', badgeBg: '#3897F0', Badge: FollowBadge, message: '회원님을 팔로우하기 시작했습니다.' },
-  COMMENT: { label: '댓글',   badgeBg: '#E03131', Badge: CommentBadge, message: '댓글을 남겼습니다.' },
+  FOLLOW: {
+    label: '팔로우',
+    badgeBg: '#3897F0',
+    Badge: FollowBadge,
+    message: '회원님을 팔로우하기 시작했습니다.',
+  },
+  COMMENT: {
+    label: '댓글',
+    badgeBg: '#E03131',
+    Badge: CommentBadge,
+    message: '댓글을 남겼습니다.',
+  },
 };
 
 // API 응답 → 화면 아이템 변환
@@ -79,10 +82,7 @@ function NotifItem({ item, onRead }) {
   };
 
   return (
-    <button
-      className={`${styles.item} ${!item.isRead ? styles.unread : ''}`}
-      onClick={handleClick}
-    >
+    <button className={`${styles.item} ${!item.isRead ? styles.unread : ''}`} onClick={handleClick}>
       <div className={styles.avatarWrap}>
         {item.actorProfileImageUrl ? (
           <NotifAvatar src={item.actorProfileImageUrl} fallbackColor={item.actorColor} username={item.actorUsername} />
@@ -97,7 +97,7 @@ function NotifItem({ item, onRead }) {
       </div>
       <div className={styles.textWrap}>
         <p className={styles.message}>
-          <strong>{item.actorUsername}</strong>{' '}{meta.message}
+          <strong>{item.actorUsername}</strong> {meta.message}
         </p>
         <span className={styles.time}>{timeAgo(item.createdAt)}</span>
       </div>
@@ -126,14 +126,18 @@ export default function NotificationsView() {
       {todayItems.length > 0 && (
         <section>
           <div className={styles.sectionLabel}>오늘</div>
-          {todayItems.map((n) => <NotifItem key={n.id} item={n} onRead={markRead} />)}
+          {todayItems.map((n) => (
+            <NotifItem key={n.id} item={n} onRead={markRead} />
+          ))}
         </section>
       )}
 
       {olderItems.length > 0 && (
         <section>
           <div className={styles.sectionLabel}>이번 주</div>
-          {olderItems.map((n) => <NotifItem key={n.id} item={n} onRead={markRead} />)}
+          {olderItems.map((n) => (
+            <NotifItem key={n.id} item={n} onRead={markRead} />
+          ))}
         </section>
       )}
 

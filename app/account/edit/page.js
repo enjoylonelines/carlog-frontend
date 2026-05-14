@@ -1,12 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  getUserProfile,
-  updateUserAccount,
-  checkLoginIdAvailable,
-  checkEmailAvailable,
-} from '../../lib/api';
+import { getUserProfile, updateUserAccount, checkLoginIdAvailable, checkEmailAvailable } from '../../lib/api';
 import styles from './page.module.css';
 
 export default function EditAccountPage() {
@@ -190,7 +185,6 @@ export default function EditAccountPage() {
         <h1 className={styles.title}>회원 정보 수정</h1>
 
         <form className={styles.form} onSubmit={handleSubmit}>
-
           {/* 아이디 */}
           <div className={styles.field}>
             <label className={styles.label}>아이디</label>
@@ -199,7 +193,10 @@ export default function EditAccountPage() {
                 className={`${styles.input} ${loginIdStatus === 'ok' ? styles.inputOk : loginIdStatus === 'dup' ? styles.inputErr : ''}`}
                 type="text"
                 value={loginId}
-                onChange={(e) => { setLoginId(e.target.value); setLoginIdStatus(null); }}
+                onChange={(e) => {
+                  setLoginId(e.target.value);
+                  setLoginIdStatus(null);
+                }}
                 autoComplete="username"
               />
               <button type="button" className={styles.checkBtn} onClick={handleCheckLoginId}>
@@ -218,7 +215,10 @@ export default function EditAccountPage() {
                 className={`${styles.input} ${emailStatus === 'ok' ? styles.inputOk : emailStatus === 'dup' ? styles.inputErr : ''}`}
                 type="email"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); setEmailStatus(null); }}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailStatus(null);
+                }}
                 autoComplete="email"
               />
               <button type="button" className={styles.checkBtn} onClick={handleCheckEmail}>
@@ -262,7 +262,10 @@ export default function EditAccountPage() {
                 className={styles.input}
                 type="password"
                 value={newPassword}
-                onChange={(e) => { setNewPassword(e.target.value); setConfirmPasswordError(''); }}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  setConfirmPasswordError('');
+                }}
                 autoComplete="new-password"
                 placeholder="변경 시에만 입력"
               />
@@ -273,13 +276,14 @@ export default function EditAccountPage() {
                 className={`${styles.input} ${confirmPasswordError ? styles.inputErr : ''}`}
                 type="password"
                 value={confirmPassword}
-                onChange={(e) => { setConfirmPassword(e.target.value); setConfirmPasswordError(''); }}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setConfirmPasswordError('');
+                }}
                 autoComplete="new-password"
                 placeholder="변경 시에만 입력"
               />
-              {confirmPasswordError && (
-                <span className={styles.msgErr}>{confirmPasswordError}</span>
-              )}
+              {confirmPasswordError && <span className={styles.msgErr}>{confirmPasswordError}</span>}
             </div>
           </div>
 
@@ -287,11 +291,7 @@ export default function EditAccountPage() {
           {success && <p className={styles.msgOk}>{success}</p>}
 
           <div className={styles.btnGroup}>
-            <button
-              type="submit"
-              className={styles.btnPrimary}
-              disabled={submitting}
-            >
+            <button type="submit" className={styles.btnPrimary} disabled={submitting}>
               {submitting ? '저장 중...' : '수정 완료'}
             </button>
             <button

@@ -7,12 +7,7 @@ import PostCard from './components/PostCard/PostCard';
 import { getHashtags, searchBoards } from '../api';
 import { useScrollRestore } from './hooks/useScrollRestore';
 import { avatarColor } from './utils/avatar';
-import {
-  BOARD_DELETED_EVENT,
-  BOARD_SAVED_EVENT,
-  clearFeedStale,
-  isFeedStale,
-} from './utils/feedRefresh';
+import { BOARD_DELETED_EVENT, BOARD_SAVED_EVENT, clearFeedStale, isFeedStale } from './utils/feedRefresh';
 import styles from './page.module.css';
 
 const mapBoard = (board) => ({
@@ -60,7 +55,6 @@ export default function FeedPage() {
   const scrollRestoredRef = useRef(false);
   const scrollPendingRef = useRef(false);
 
-
   // 캐시된 posts가 있을 때만 페인트 전 즉시 복원 — 없으면 loadBoards 후 scrollPendingRef로 처리
   useLayoutEffect(() => {
     if (_cachedPosts.length > 0 && !scrollRestoredRef.current && !selectedTag && !keyword) {
@@ -75,53 +69,55 @@ export default function FeedPage() {
     });
   }, []);
 
+  const loadBoards = useCallback(
+    async (pageNo, append) => {
+      if (isLoadingRef.current) return;
+      isLoadingRef.current = true;
+      setIsLoading(true);
+      if (!append) setHasMore(true);
 
-  const loadBoards = useCallback(async (pageNo, append) => {
-    if (isLoadingRef.current) return;
-    isLoadingRef.current = true;
-    setIsLoading(true);
-    if (!append) setHasMore(true);
+      const data = await searchBoards({ pageNo, tag: selectedTag || '', keyword });
+      isLoadingRef.current = false;
+      setIsLoading(false);
 
-    const data = await searchBoards({ pageNo, tag: selectedTag || '', keyword });
-    isLoadingRef.current = false;
-    setIsLoading(false);
-
-    const boards = data?.boards;
-    if (boards?.length) {
-      const mapped = boards.map(mapBoard);
-      setPosts((prev) => {
-        const merged = append ? [...prev, ...mapped] : mapped;
-        const seen = new Set();
-        const next = merged.filter((p) => {
-          if (seen.has(p.boardId)) return false;
-          seen.add(p.boardId);
-          return true;
+      const boards = data?.boards;
+      if (boards?.length) {
+        const mapped = boards.map(mapBoard);
+        setPosts((prev) => {
+          const merged = append ? [...prev, ...mapped] : mapped;
+          const seen = new Set();
+          const next = merged.filter((p) => {
+            if (seen.has(p.boardId)) return false;
+            seen.add(p.boardId);
+            return true;
+          });
+          if (!selectedTag && !keyword) _cachedPosts = next;
+          return next;
         });
-        if (!selectedTag && !keyword) _cachedPosts = next;
-        return next;
-      });
-      const more = pageNo < (data.pager?.totalPageNo ?? 1);
-      setHasMore(more);
-      if (!selectedTag && !keyword) {
-        _cachedHasMore = more;
-        _cachedPage = pageNo;
+        const more = pageNo < (data.pager?.totalPageNo ?? 1);
+        setHasMore(more);
+        if (!selectedTag && !keyword) {
+          _cachedHasMore = more;
+          _cachedPage = pageNo;
+        }
+      } else {
+        if (!append) {
+          setPosts([]);
+          if (!selectedTag && !keyword) _cachedPosts = [];
+        }
+        setHasMore(false);
+        if (!selectedTag && !keyword) _cachedHasMore = false;
       }
-    } else {
-      if (!append) {
-        setPosts([]);
-        if (!selectedTag && !keyword) _cachedPosts = [];
-      }
-      setHasMore(false);
-      if (!selectedTag && !keyword) _cachedHasMore = false;
-    }
-    pageRef.current = pageNo;
+      pageRef.current = pageNo;
 
-    // 첫 로드 완료 후 스크롤 복원 — posts DOM 반영 후 실행되도록 pending 플래그
-    if (!append && !scrollRestoredRef.current) {
-      scrollRestoredRef.current = true;
-      scrollPendingRef.current = true;
-    }
-  }, [selectedTag, keyword]);
+      // 첫 로드 완료 후 스크롤 복원 — posts DOM 반영 후 실행되도록 pending 플래그
+      if (!append && !scrollRestoredRef.current) {
+        scrollRestoredRef.current = true;
+        scrollPendingRef.current = true;
+      }
+    },
+    [selectedTag, keyword],
+  );
 
   const refreshFeed = useCallback(() => {
     if (refreshTimerRef.current) {
@@ -180,7 +176,6 @@ export default function FeedPage() {
     };
   }, [refreshFeed]);
 
-
   // posts가 DOM에 반영된 후 pending 스크롤 복원 실행 (새로고침 포함)
   useEffect(() => {
     if (scrollPendingRef.current && posts.length > 0) {
@@ -199,27 +194,31 @@ export default function FeedPage() {
           loadBoards(pageRef.current + 1, true);
         }
       },
-      { rootMargin: '200px' }
+      { rootMargin: '200px' },
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [hasMore, loadBoards, posts.length]);
 
-  const handleTagSelect = useCallback((tag) => {
-    const params = new URLSearchParams();
-    if (tag) params.set('tag', tag);
-    if (keyword) params.set('keyword', keyword);
-    router.push(`/?${params.toString()}`);
-  }, [keyword, router]);
-
+  const handleTagSelect = useCallback(
+    (tag) => {
+      const params = new URLSearchParams();
+      if (tag) params.set('tag', tag);
+      if (keyword) params.set('keyword', keyword);
+      router.push(`/?${params.toString()}`);
+    },
+    [keyword, router],
+  );
 
   return (
     <>
       <StoriesBar />
       {keyword && (
         <div className={styles.filterBanner}>
-          <span><b>{keyword}</b> 검색 결과</span>
+          <span>
+            <b>{keyword}</b> 검색 결과
+          </span>
           <button
             className={styles.clearBtn}
             onClick={() => {
@@ -234,7 +233,9 @@ export default function FeedPage() {
       )}
       <HashtagBar hashtags={hashtags} selected={selectedTag} onSelect={handleTagSelect} />
       <div className={styles.feed}>
-        {posts.map((post) => <PostCard key={post.boardId} post={post} />)}
+        {posts.map((post) => (
+          <PostCard key={post.boardId} post={post} />
+        ))}
         {isLoading && (
           <div className={styles.state}>
             <div className={styles.spinner} />

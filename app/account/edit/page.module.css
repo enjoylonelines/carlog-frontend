@@ -73,7 +73,7 @@
 }
 
 .inputOk {
-  border-color: #2F9E44 !important;
+  border-color: #2f9e44 !important;
 }
 
 .inputErr {
@@ -115,12 +115,12 @@
 }
 
 .checkBtn:hover {
-  background: #F0F0F0;
+  background: #f0f0f0;
 }
 
 .msgOk {
   font-size: 12px;
-  color: #2F9E44;
+  color: #2f9e44;
   margin-top: 2px;
 }
 
@@ -190,7 +190,7 @@
 }
 
 .btnCancel:hover:not(:disabled) {
-  background: #F5F5F5;
+  background: #f5f5f5;
 }
 
 .btnCancel:disabled {

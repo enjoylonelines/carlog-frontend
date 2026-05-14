@@ -11,7 +11,11 @@ function FollowAvatar({ src, color, initial }) {
   if (src && src !== errSrc) {
     return <img src={src} alt="" className={styles.avatar} onError={() => setErrSrc(src)} />;
   }
-  return <div className={styles.avatar} style={{ background: color }}>{initial}</div>;
+  return (
+    <div className={styles.avatar} style={{ background: color }}>
+      {initial}
+    </div>
+  );
 }
 
 export default function FollowListView({ initialTab = 'followers', userId: userIdProp }) {
@@ -27,23 +31,32 @@ export default function FollowListView({ initialTab = 'followers', userId: userI
 
     (async () => {
       setLoading(true);
-      const data = tab === 'followers'
-        ? await getFollowers(userId)
-        : await getFollowings(userId);
+      const data = tab === 'followers' ? await getFollowers(userId) : await getFollowings(userId);
       if (!cancelled) {
         setList(data || []);
         setLoading(false);
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [tab, userId]);
 
   return (
     <div className={styles.wrap}>
       <div className={styles.topBar}>
         <button className={styles.backBtn} onClick={() => router.back()} aria-label="뒤로">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
@@ -75,23 +88,24 @@ export default function FollowListView({ initialTab = 'followers', userId: userI
           </p>
         )}
 
-        {!loading && list.map((item) => {
-          const displayUserId = tab === 'followers' ? item.userId : item.targetId;
-          const color = avatarColor(displayUserId);
-          const initial = item.username ? item.username[0].toUpperCase() : '?';
-          return (
-            <button
-              key={`${item.userId}-${item.targetId}`}
-              className={styles.item}
-              onClick={() => router.push(`/users/${displayUserId}`)}
-            >
-              <FollowAvatar src={item.profileImageUrl} color={color} initial={initial} />
-              <div className={styles.info}>
-                <span className={styles.username}>{item.username}</span>
-              </div>
-            </button>
-          );
-        })}
+        {!loading &&
+          list.map((item) => {
+            const displayUserId = tab === 'followers' ? item.userId : item.targetId;
+            const color = avatarColor(displayUserId);
+            const initial = item.username ? item.username[0].toUpperCase() : '?';
+            return (
+              <button
+                key={`${item.userId}-${item.targetId}`}
+                className={styles.item}
+                onClick={() => router.push(`/users/${displayUserId}`)}
+              >
+                <FollowAvatar src={item.profileImageUrl} color={color} initial={initial} />
+                <div className={styles.info}>
+                  <span className={styles.username}>{item.username}</span>
+                </div>
+              </button>
+            );
+          })}
       </div>
     </div>
   );
