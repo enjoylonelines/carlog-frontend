@@ -6,6 +6,7 @@ import { AuthContext } from '../../../contexts/AuthContext';
 import { checkFollow, followUser, unfollowUser } from '../../../api';
 import { avatarColor as getAvatarColor } from '../../utils/avatar';
 import { followCache } from '../../utils/followCache';
+import { likeCache } from '../../utils/likeCache';
 import { createLike, deleteLike } from '@/api/like';
 
 const isSrc = (url) => !!url && (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://'));
@@ -53,9 +54,28 @@ export default function PostCard({ post }) {
   // null = 로딩 중, true/false = 확정
   const [following, setFollowing] = useState(() => followCache[userId] ?? null);
 
-  // 좋아요
-  const [liked, setLiked] = useState(() => (isLike ?? 0) === 1);
-  const [likes, setLikes] = useState(() => likeCount ?? 0);
+  // 좋아요 — prop 변경 감지 + likeCache 우선 적용
+  const [{ prevIsLike, prevLikeCount, liked, likes }, setLikeState] = useState(() => {
+    const cached = likeCache[boardId];
+    return {
+      prevIsLike: isLike ?? 0,
+      prevLikeCount: likeCount ?? 0,
+      liked: cached ? cached.liked : (isLike ?? 0) === 1,
+      likes: cached ? cached.likes : likeCount ?? 0,
+    };
+  });
+
+  if ((isLike ?? 0) !== prevIsLike || (likeCount ?? 0) !== prevLikeCount) {
+    const cached = likeCache[boardId];
+    setLikeState({
+      prevIsLike: isLike ?? 0,
+      prevLikeCount: likeCount ?? 0,
+      liked: cached ? cached.liked : (isLike ?? 0) === 1,
+      likes: cached ? cached.likes : likeCount ?? 0,
+    });
+  }
+
+  const likePendingRef = useRef(false);
 
   useEffect(() => {
     if (isOwnPost) return;
@@ -102,22 +122,29 @@ export default function PostCard({ post }) {
     setCurrentMediaIndex(nextIndex);
   };
 
-  // 좋아요 이벤트
   const handleLike = async (e) => {
     e.stopPropagation();
+    if (likePendingRef.current) return;
+    likePendingRef.current = true;
+
+    const nextLiked = !liked;
+    const nextLikes = nextLiked ? likes + 1 : likes - 1;
+    setLikeState((prev) => ({ ...prev, liked: nextLiked, likes: nextLikes }));
+    likeCache[boardId] = { liked: nextLiked, likes: nextLikes };
 
     try {
-      if (liked) {
-        const res = await deleteLike(boardId);
-        setLiked((res?.isLiked ?? 0) === 1);
-        setLikes(res?.likeCount ?? 0);
-      } else {
-        const data = await createLike(boardId);
-        setLiked((data?.isLiked ?? 0) === 1);
-        setLikes(data?.likeCount ?? 0);
+      const res = nextLiked ? await createLike(boardId) : await deleteLike(boardId);
+      if (res) {
+        const confirmed = { liked: (res.isLiked ?? 0) === 1, likes: res.likeCount ?? nextLikes };
+        setLikeState((prev) => ({ ...prev, ...confirmed }));
+        likeCache[boardId] = confirmed;
       }
     } catch (err) {
       console.error('좋아요 처리 실패', err);
+      setLikeState((prev) => ({ ...prev, liked: !nextLiked, likes: likes }));
+      likeCache[boardId] = { liked: !nextLiked, likes };
+    } finally {
+      likePendingRef.current = false;
     }
   };
 

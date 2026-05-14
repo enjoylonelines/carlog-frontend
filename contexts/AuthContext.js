@@ -15,6 +15,12 @@ function AuthContextProvider({ children }) {
   // Axios 설정 중에 UI가 나오지 않도록 하는 플래그 변수
   const [isLoading, setIsLoading] = useState(true);
 
+  const logout = () => {
+    setUser('');
+    setAccessToken('');
+    setUserId(null);
+  };
+
   // Context를 통해서 제공할 전역 객체
   const value = {
     user,
@@ -23,6 +29,7 @@ function AuthContextProvider({ children }) {
     setAccessToken,
     userId,
     setUserId,
+    logout,
   };
 
   // 브라우저가 리프레쉬되었을 때(애플리케이션이 다시 시작할때) 실행되는 자동 콜백 함수 등록

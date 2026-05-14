@@ -60,10 +60,23 @@ export default function NotificationContextProvider({ children }) {
     await apiMarkAllRead(userId);
   }, [userId]);
 
+  // 동일 발신자의 특정 타입 알림을 한 번에 읽음 처리
+  const markReadBySenderAndType = useCallback(
+    async (senderId, type) => {
+      const ids = items
+        .filter((n) => n.senderId === senderId && n.type === type && !n.isRead)
+        .map((n) => n.id);
+      if (!ids.length) return;
+      setItems((prev) => prev.map((n) => (ids.includes(n.id) ? { ...n, isRead: true } : n)));
+      await Promise.all(ids.map((id) => apiMarkRead(id)));
+    },
+    [items],
+  );
+
   const unreadCount = items.filter((n) => !n.isRead).length;
 
   return (
-    <NotificationContext.Provider value={{ items, unreadCount, markRead, markAllRead }}>
+    <NotificationContext.Provider value={{ items, unreadCount, markRead, markAllRead, markReadBySenderAndType }}>
       {children}
     </NotificationContext.Provider>
   );

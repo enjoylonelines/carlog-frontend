@@ -1,20 +1,36 @@
 'use client';
 
 import axios from 'axios';
+import { useEffect } from 'react';
 
 axios.defaults.baseURL = process.env.NEXT_PUBLIC_API_URL;
 
-// 로그인을 성공했을때 기본 요청 헤더에 Authorization 추가
 export function addAuthHeader(accessToken) {
   axios.defaults.headers.common['Authorization'] = 'Bearer ' + accessToken;
 }
 
-// 로그아웃했을때 기본 요청 헤더에 Authorization 삭제
 export function removeAuthHeader() {
   delete axios.defaults.headers.common['Authorization'];
 }
 
 function AxiosConfig() {
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (res) => res,
+      (error) => {
+        if (error.response?.status === 401) {
+          localStorage.removeItem('user');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('userId');
+          removeAuthHeader();
+          window.location.replace('/login');
+        }
+        return Promise.reject(error);
+      },
+    );
+    return () => axios.interceptors.response.eject(interceptor);
+  }, []);
+
   return null;
 }
 export default AxiosConfig;
