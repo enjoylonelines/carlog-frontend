@@ -1,5 +1,5 @@
 'use client';
-import { useContext, useState } from 'react';
+import { useContext, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { NotificationContext } from '../../../contexts/NotificationContext';
 import { avatarColor } from '../../utils/avatar';
@@ -68,26 +68,62 @@ const TYPE_META = {
   },
 };
 
-// API 응답 → 화면 아이템 변환
-function toItem(n) {
-  return {
-    id: n.notificationId,
-    type: n.type,
-    senderId: n.senderId,
-    actorUsername: n.senderUsername ?? `user${n.senderId}`,
-    actorProfileImageUrl: n.senderProfileImageUrl ?? null,
-    actorColor: avatarColor(n.senderId),
-    boardId: n.boardId,
-    createdAt: n.createdAt,
-    isRead: n.read,
-  };
-}
+const SWIPE_THRESHOLD = 60;
+const DELETE_SNAP = 72;
 
-function NotifItem({ item, onRead, onReadBySenderAndType }) {
+function SwipeableNotifItem({ item, onRead, onReadBySenderAndType, onDelete }) {
   const router = useRouter();
   const meta = TYPE_META[item.type] ?? TYPE_META.COMMENT;
 
-  const handleClick = () => {
+  const startXRef = useRef(null);
+  const currentXRef = useRef(0);
+  const innerRef = useRef(null);
+  const [swiped, setSwiped] = useState(false);
+
+  const snapTo = useCallback((x, animate = true) => {
+    const el = innerRef.current;
+    if (!el) return;
+    if (animate) el.style.transition = 'transform 0.2s ease';
+    else el.style.transition = 'none';
+    el.style.transform = `translateX(${x}px)`;
+    currentXRef.current = x;
+  }, []);
+
+  const handleTouchStart = (e) => {
+    startXRef.current = e.touches[0].clientX;
+    if (innerRef.current) innerRef.current.style.transition = 'none';
+  };
+
+  const handleTouchMove = (e) => {
+    if (startXRef.current === null) return;
+    const dx = e.touches[0].clientX - startXRef.current;
+    const base = swiped ? -DELETE_SNAP : 0;
+    const next = Math.min(0, Math.max(-DELETE_SNAP - 10, base + dx));
+    if (innerRef.current) innerRef.current.style.transform = `translateX(${next}px)`;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (startXRef.current === null) return;
+    const dx = e.changedTouches[0].clientX - startXRef.current;
+    startXRef.current = null;
+
+    if (!swiped && dx < -SWIPE_THRESHOLD) {
+      snapTo(-DELETE_SNAP);
+      setSwiped(true);
+    } else if (swiped && dx > SWIPE_THRESHOLD) {
+      snapTo(0);
+      setSwiped(false);
+    } else {
+      snapTo(swiped ? -DELETE_SNAP : 0);
+    }
+  };
+
+  const handleItemClick = () => {
+    if (swiped) {
+      snapTo(0);
+      setSwiped(false);
+      return;
+    }
     if (item.type === 'NEW_POST') {
       onReadBySenderAndType(item.senderId, 'NEW_POST');
     } else {
@@ -101,32 +137,54 @@ function NotifItem({ item, onRead, onReadBySenderAndType }) {
   };
 
   return (
-    <button className={`${styles.item} ${!item.isRead ? styles.unread : ''}`} onClick={handleClick}>
-      <div className={styles.avatarWrap}>
-        {item.actorProfileImageUrl ? (
-          <NotifAvatar src={item.actorProfileImageUrl} fallbackColor={item.actorColor} username={item.actorUsername} />
-        ) : (
-          <div className={styles.avatar} style={{ background: item.actorColor }}>
-            {item.actorUsername[0].toUpperCase()}
+    <div className={styles.swipeRow}>
+      <div
+        ref={innerRef}
+        className={styles.swipeInner}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <button className={`${styles.item} ${!item.isRead ? styles.unread : ''}`} onClick={handleItemClick}>
+          <div className={styles.avatarWrap}>
+            {item.actorProfileImageUrl ? (
+              <NotifAvatar src={item.actorProfileImageUrl} fallbackColor={item.actorColor} username={item.actorUsername} />
+            ) : (
+              <div className={styles.avatar} style={{ background: item.actorColor }}>
+                {item.actorUsername[0].toUpperCase()}
+              </div>
+            )}
+            <span className={styles.badge} style={{ background: meta.badgeBg }}>
+              <meta.Badge />
+            </span>
           </div>
-        )}
-        <span className={styles.badge} style={{ background: meta.badgeBg }}>
-          <meta.Badge />
-        </span>
+          <div className={styles.textWrap}>
+            <p className={styles.message}>
+              <strong>{item.actorUsername}</strong> {meta.message}
+            </p>
+            {item.content && (
+              <p className={styles.commentPreview}>{item.content}</p>
+            )}
+            <span className={styles.time}>{timeAgo(item.createdAt)}</span>
+          </div>
+          {!item.isRead && <div className={styles.dot} />}
+        </button>
       </div>
-      <div className={styles.textWrap}>
-        <p className={styles.message}>
-          <strong>{item.actorUsername}</strong> {meta.message}
-        </p>
-        <span className={styles.time}>{timeAgo(item.createdAt)}</span>
-      </div>
-      {!item.isRead && <div className={styles.dot} />}
-    </button>
+      <button className={styles.deleteReveal} onClick={() => onDelete(item.id)} aria-label="삭제">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14H6L5 6" />
+          <path d="M10 11v6M14 11v6" />
+          <path d="M9 6V4h6v2" />
+        </svg>
+      </button>
+    </div>
   );
 }
 
 export default function NotificationsView() {
-  const { items, unreadCount, markRead, markAllRead, markReadBySenderAndType } = useContext(NotificationContext);
+  const { items, unreadCount, markRead, markAllRead, markReadBySenderAndType, deleteOne, deleteAll } =
+    useContext(NotificationContext);
 
   const todayItems = items.filter((n) => Date.now() - new Date(n.createdAt) < 86400 * 1000);
   const olderItems = items.filter((n) => Date.now() - new Date(n.createdAt) >= 86400 * 1000);
@@ -135,18 +193,31 @@ export default function NotificationsView() {
     <div className={styles.wrap}>
       <div className={styles.topBar}>
         <h1 className={styles.title}>알림</h1>
-        {unreadCount > 0 && (
-          <button className={styles.readAllBtn} onClick={markAllRead}>
-            모두 읽음
-          </button>
-        )}
+        <div className={styles.topActions}>
+          {unreadCount > 0 && (
+            <button className={styles.readAllBtn} onClick={markAllRead}>
+              모두 읽음
+            </button>
+          )}
+          {items.length > 0 && (
+            <button className={styles.deleteAllBtn} onClick={deleteAll}>
+              전체 삭제
+            </button>
+          )}
+        </div>
       </div>
 
       {todayItems.length > 0 && (
         <section>
           <div className={styles.sectionLabel}>오늘</div>
           {todayItems.map((n) => (
-            <NotifItem key={n.id} item={n} onRead={markRead} onReadBySenderAndType={markReadBySenderAndType} />
+            <SwipeableNotifItem
+              key={n.id}
+              item={n}
+              onRead={markRead}
+              onReadBySenderAndType={markReadBySenderAndType}
+              onDelete={deleteOne}
+            />
           ))}
         </section>
       )}
@@ -155,7 +226,13 @@ export default function NotificationsView() {
         <section>
           <div className={styles.sectionLabel}>이번 주</div>
           {olderItems.map((n) => (
-            <NotifItem key={n.id} item={n} onRead={markRead} onReadBySenderAndType={markReadBySenderAndType} />
+            <SwipeableNotifItem
+              key={n.id}
+              item={n}
+              onRead={markRead}
+              onReadBySenderAndType={markReadBySenderAndType}
+              onDelete={deleteOne}
+            />
           ))}
         </section>
       )}

@@ -13,6 +13,14 @@ export const markAllRead = async (receiverId) => {
   await client.put('/api/notifications/read-all', null, { params: { receiverId } });
 };
 
+export const deleteNotification = async (notificationId) => {
+  await client.delete(`/api/notifications/${notificationId}`);
+};
+
+export const deleteAllNotifications = async (receiverId) => {
+  await client.delete('/api/notifications', { params: { receiverId } });
+};
+
 export const subscribeNotifications = (receiverId, onNotification) => {
   const url = `${process.env.NEXT_PUBLIC_API_URL}/api/notifications/stream?receiverId=${receiverId}`;
   const es = new EventSource(url);

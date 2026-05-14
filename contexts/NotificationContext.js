@@ -5,6 +5,8 @@ import {
   getNotifications,
   markRead as apiMarkRead,
   markAllRead as apiMarkAllRead,
+  deleteNotification as apiDeleteOne,
+  deleteAllNotifications as apiDeleteAll,
   subscribeNotifications,
 } from '../api/notification';
 import { avatarColor } from '@/app/utils/avatar';
@@ -14,6 +16,8 @@ export const NotificationContext = createContext({
   unreadCount: 0,
   markRead: () => {},
   markAllRead: () => {},
+  deleteOne: () => {},
+  deleteAll: () => {},
 });
 
 function toItem(n) {
@@ -25,6 +29,7 @@ function toItem(n) {
     actorProfileImageUrl: n.senderProfileImageUrl ?? null,
     actorColor: avatarColor(n.senderId),
     boardId: n.boardId,
+    content: n.content ?? null,
     createdAt: n.createdAt,
     isRead: n.read,
   };
@@ -73,10 +78,38 @@ export default function NotificationContextProvider({ children }) {
     [items],
   );
 
+  const deleteOne = useCallback(async (id) => {
+    setItems((prev) => prev.filter((n) => n.id !== id));
+    await apiDeleteOne(id);
+  }, []);
+
+  const deleteAll = useCallback(async () => {
+    if (!userId) return;
+    setItems([]);
+    await apiDeleteAll(userId);
+  }, [userId]);
+
+  const deleteByBoardId = useCallback((boardId) => {
+    const id = Number(boardId);
+    setItems((prev) => prev.filter((n) => n.boardId !== id));
+  }, []);
+
+  const updateCommentContent = useCallback((boardId, senderId, oldContent, newContent) => {
+    const bid = Number(boardId);
+    const sid = Number(senderId);
+    setItems((prev) =>
+      prev.map((n) =>
+        n.boardId === bid && n.senderId === sid && n.type === 'COMMENT' && n.content === oldContent
+          ? { ...n, content: newContent }
+          : n
+      )
+    );
+  }, []);
+
   const unreadCount = items.filter((n) => !n.isRead).length;
 
   return (
-    <NotificationContext.Provider value={{ items, unreadCount, markRead, markAllRead, markReadBySenderAndType }}>
+    <NotificationContext.Provider value={{ items, unreadCount, markRead, markAllRead, markReadBySenderAndType, deleteOne, deleteAll, deleteByBoardId, updateCommentContent }}>
       {children}
     </NotificationContext.Provider>
   );
