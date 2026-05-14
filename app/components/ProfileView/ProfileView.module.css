@@ -9,6 +9,83 @@
   align-items: center;
   gap: 24px;
   padding: 20px 16px 12px;
+  position: relative;
+}
+
+.settingsWrap {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.settingsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.settingsBtn:hover {
+  background: #f0f0f0;
+}
+
+.settingsMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 160px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 200;
+  animation: menuFadeIn 0.12s ease;
+}
+
+@keyframes menuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settingsItem {
+  width: 100%;
+  padding: 13px 16px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.settingsItem:hover {
+  background: #f5f5f5;
+}
+
+.settingsItemDanger {
+  color: var(--color-primary);
+}
+
+.settingsDivider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0;
 }
 
 .avatarLg {
