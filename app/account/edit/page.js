@@ -1,5 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 import { useRouter } from 'next/navigation';
 import {
   getUserProfile,
@@ -75,12 +77,11 @@ export default function EditAccountPage() {
   };
 
   const handleCheckEmail = async () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim()) {
       setEmailError('이메일을 입력해주세요.');
       return;
     }
-    if (!emailRegex.test(email)) {
+    if (!EMAIL_REGEX.test(email)) {
       setEmailError('올바른 이메일 형식이 아닙니다.');
       return;
     }
@@ -100,7 +101,6 @@ export default function EditAccountPage() {
     setSuccess('');
 
     // 클릭 시 전체 유효성 검사
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     let hasError = false;
 
     if (!loginId.trim()) {
@@ -119,7 +119,7 @@ export default function EditAccountPage() {
     if (!email.trim()) {
       setEmailError('이메일을 입력해주세요.');
       hasError = true;
-    } else if (!emailRegex.test(email)) {
+    } else if (!EMAIL_REGEX.test(email)) {
       setEmailError('올바른 이메일 형식이 아닙니다.');
       hasError = true;
     } else if (emailStatus === 'dup') {
@@ -130,13 +130,6 @@ export default function EditAccountPage() {
       hasError = true;
     } else {
       setEmailError('');
-    }
-
-    if (!username.trim()) {
-      setUsernameError('닉네임을 입력해주세요.');
-      hasError = true;
-    } else {
-      setUsernameError('');
     }
 
     if (newPassword && newPassword !== confirmPassword) {
@@ -151,7 +144,7 @@ export default function EditAccountPage() {
     setError('');
     setSubmitting(true);
     try {
-      const payload = { loginId, email, username, bio };
+      const payload = { loginId, email, username: username.trim() || null, bio };
       if (newPassword) payload.newPassword = newPassword;
       await updateUserAccount(userId, payload);
       setSuccess('회원 정보가 성공적으로 수정되었습니다.');
@@ -234,6 +227,7 @@ export default function EditAccountPage() {
               type="text"
               value={username}
               onChange={(e) => { setUsername(e.target.value); setUsernameError(''); }}
+              placeholder={loginId || String(userId)}
             />
             {usernameError && <span className={styles.msgErr}>{usernameError}</span>}
           </div>
