@@ -1,5 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 import { useRouter } from 'next/navigation';
 import { getUserProfile, updateUserAccount, checkLoginIdAvailable, checkEmailAvailable } from '../../../api/user';
 import styles from './page.module.css';
@@ -38,7 +40,7 @@ export default function EditAccountPage() {
   useEffect(() => {
     const storedId = localStorage.getItem('userId');
     if (!storedId) {
-      router.push('/login');
+      router.push('/');
       return;
     }
     const id = Number(storedId);
@@ -73,12 +75,11 @@ export default function EditAccountPage() {
   };
 
   const handleCheckEmail = async () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim()) {
       setEmailError('이메일을 입력해주세요.');
       return;
     }
-    if (!emailRegex.test(email)) {
+    if (!EMAIL_REGEX.test(email)) {
       setEmailError('올바른 이메일 형식이 아닙니다.');
       return;
     }
@@ -98,7 +99,6 @@ export default function EditAccountPage() {
     setSuccess('');
 
     // 클릭 시 전체 유효성 검사
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     let hasError = false;
 
     if (!loginId.trim()) {
@@ -117,7 +117,7 @@ export default function EditAccountPage() {
     if (!email.trim()) {
       setEmailError('이메일을 입력해주세요.');
       hasError = true;
-    } else if (!emailRegex.test(email)) {
+    } else if (!EMAIL_REGEX.test(email)) {
       setEmailError('올바른 이메일 형식이 아닙니다.');
       hasError = true;
     } else if (emailStatus === 'dup') {
@@ -128,20 +128,6 @@ export default function EditAccountPage() {
       hasError = true;
     } else {
       setEmailError('');
-    }
-
-    if (!username.trim()) {
-      setUsernameError('닉네임을 입력해주세요.');
-      hasError = true;
-    } else {
-      setUsernameError('');
-    }
-
-    if (newPassword && !currentPassword) {
-      setCurrentPasswordError('현재 비밀번호를 입력해주세요.');
-      hasError = true;
-    } else {
-      setCurrentPasswordError('');
     }
 
     if (newPassword && newPassword !== confirmPassword) {
@@ -156,22 +142,21 @@ export default function EditAccountPage() {
     setError('');
     setSubmitting(true);
     try {
-      const payload = { loginId, email, username, bio };
-      if (newPassword) {
-        payload.currentPassword = currentPassword;
-        payload.newPassword = newPassword;
-      }
+      const payload = { loginId, email, username: username.trim() || null, bio };
+      if (newPassword) payload.newPassword = newPassword;
       await updateUserAccount(userId, payload);
       setSuccess('회원 정보가 성공적으로 수정되었습니다.');
       setOriginalLoginId(loginId);
       setOriginalEmail(email);
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setLoginIdStatus(null);
       setEmailStatus(null);
-    } catch {
-      setError('수정 중 오류가 발생했습니다. 다시 시도해 주세요.');
+      setLoginIdError('');
+      setEmailError('');
+      setUsernameError('');
+    } catch (err) {
+      setError(err?.serverMessage || '수정 중 오류가 발생했습니다. 다시 시도해 주세요.');
     } finally {
       setSubmitting(false);
     }
@@ -211,6 +196,7 @@ export default function EditAccountPage() {
             </div>
             {loginIdStatus === 'ok' && <span className={styles.msgOk}>사용 가능한 아이디입니다.</span>}
             {loginIdStatus === 'dup' && <span className={styles.msgErr}>이미 사용 중인 아이디입니다.</span>}
+            {!loginIdStatus && loginIdError && <span className={styles.msgErr}>{loginIdError}</span>}
           </div>
 
           {/* 이메일 */}
@@ -233,6 +219,7 @@ export default function EditAccountPage() {
             </div>
             {emailStatus === 'ok' && <span className={styles.msgOk}>사용 가능한 이메일입니다.</span>}
             {emailStatus === 'dup' && <span className={styles.msgErr}>이미 사용 중인 이메일입니다.</span>}
+            {!emailStatus && emailError && <span className={styles.msgErr}>{emailError}</span>}
           </div>
 
           {/* 닉네임 */}
@@ -242,8 +229,10 @@ export default function EditAccountPage() {
               className={styles.input}
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => { setUsername(e.target.value); setUsernameError(''); }}
+              placeholder={loginId || String(userId)}
             />
+            {usernameError && <span className={styles.msgErr}>{usernameError}</span>}
           </div>
 
           {/* 소개 */}
@@ -297,17 +286,27 @@ export default function EditAccountPage() {
           {success && <p className={styles.msgOk}>{success}</p>}
 
           <div className={styles.btnGroup}>
-            <button type="submit" className={styles.btnPrimary} disabled={submitting}>
-              {submitting ? '저장 중...' : '수정 완료'}
-            </button>
             <button
               type="button"
-              className={styles.btnCancel}
-              onClick={() => router.push('/profile')}
+              className={styles.btnDelete}
+              onClick={() => router.push('/account/delete')}
               disabled={submitting}
             >
-              취소
+              회원 탈퇴
             </button>
+            <div className={styles.btnGroupRight}>
+              <button type="submit" className={styles.btnPrimary} disabled={submitting}>
+                {submitting ? '저장 중...' : '수정 완료'}
+              </button>
+              <button
+                type="button"
+                className={styles.btnCancel}
+                onClick={() => router.push('/profile')}
+                disabled={submitting}
+              >
+                취소
+              </button>
+            </div>
           </div>
         </form>
       </div>
