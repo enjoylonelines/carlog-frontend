@@ -2,7 +2,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../contexts/AuthContext';
-import { getUserProfile, checkFollow, followUser, unfollowUser } from '../../../api';
+import { getUserProfile, checkFollow, followUser, unfollowUser, increaseBoardHit } from '../../../api';
 import { searchBoards } from '../../../api';
 import client from '../../../api/client';
 import { avatarColor } from '../../utils/avatar';
@@ -54,6 +54,14 @@ export default function UserProfileView({ userId }) {
     client.invalidate(`/api/users/${userId}`);
     setProfile((prev) => (prev ? { ...prev, followerCount: (prev.followerCount ?? 0) + (next ? 1 : -1) } : prev));
     setFollowLoading(false);
+  }
+
+  async function openBoard(boardId) {
+    try {
+      await increaseBoardHit(boardId);
+    } finally {
+      router.push(`/boards/${boardId}`);
+    }
   }
 
   if (!profile) {
@@ -161,7 +169,7 @@ export default function UserProfileView({ userId }) {
       ) : (
         <div className={styles.grid}>
           {posts.map((post) => (
-            <button key={post.boardId} className={styles.cell} onClick={() => router.push(`/boards/${post.boardId}`)}>
+            <button key={post.boardId} className={styles.cell} onClick={() => openBoard(post.boardId)}>
               <img
                 src={post.mediaUrls?.[0] || '/no-image.svg'}
                 alt=""

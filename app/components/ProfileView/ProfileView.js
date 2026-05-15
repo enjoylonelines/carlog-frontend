@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../contexts/AuthContext';
-import { getUserProfile, searchBoards } from '../../../api';
+import { getUserProfile, searchBoards, increaseBoardHit } from '../../../api';
 import { getLikedBoards } from '../../../api/like';
 import ProfileEditModal from '../ProfileEditModal/ProfileEditModal';
 import styles from './ProfileView.module.css';
@@ -134,6 +134,14 @@ export default function ProfileView() {
     router.push('/');
   };
 
+  const openBoard = async (boardId) => {
+    try {
+      await increaseBoardHit(boardId);
+    } finally {
+      router.push(`/boards/${boardId}`);
+    }
+  };
+
 return (
     <>
       {showEdit && (
@@ -252,7 +260,7 @@ return (
             ) : (
               <div className={styles.grid}>
                 {posts.map((post) => (
-                  <button key={post.boardId} className={styles.cell} onClick={() => router.push(`/boards/${post.boardId}`)}>
+                  <button key={post.boardId} className={styles.cell} onClick={() => openBoard(post.boardId)}>
                     <GridImage src={post.mediaUrls?.[0]} className={styles.img} />
                   </button>
                 ))}
@@ -269,7 +277,7 @@ return (
             ) : (
               <div className={styles.grid}>
                 {likedPosts.map((post) => (
-                  <button key={post.boardId} className={styles.cell} onClick={() => router.push(`/boards/${post.boardId}`)}>
+                  <button key={post.boardId} className={styles.cell} onClick={() => openBoard(post.boardId)}>
                     <GridImage src={post.mediaUrl} className={styles.img} />
                   </button>
                 ))}

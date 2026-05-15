@@ -3,7 +3,7 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '@/contexts/AuthContext';
 import { NotificationContext } from '@/contexts/NotificationContext';
-import { getFollowings } from '@/api';
+import { getFollowings, increaseBoardHit } from '@/api';
 import { avatarColor } from '@/app/utils/avatar';
 import styles from './StoriesBar.module.css';
 
@@ -74,6 +74,14 @@ export default function StoriesBar() {
 
   if (!userId || sorted.length === 0) return null;
 
+  const openBoard = async (boardId) => {
+    try {
+      await increaseBoardHit(boardId);
+    } finally {
+      router.push(`/boards/${boardId}`);
+    }
+  };
+
   return (
     <section className={styles.section}>
       <div className={styles.track}>
@@ -89,7 +97,7 @@ export default function StoriesBar() {
               onClick={() => {
                 if (active) {
                   markReadBySenderAndType(user.targetId, 'NEW_POST');
-                  router.push(`/boards/${active.boardId}`);
+                  openBoard(active.boardId);
                 } else {
                   router.push(`/users/${user.targetId}`);
                 }

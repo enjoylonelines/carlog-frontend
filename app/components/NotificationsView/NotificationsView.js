@@ -2,6 +2,7 @@
 import { useContext, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { NotificationContext } from '../../../contexts/NotificationContext';
+import { increaseBoardHit } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
 import styles from './NotificationsView.module.css';
 
@@ -118,6 +119,14 @@ function SwipeableNotifItem({ item, onRead, onReadBySenderAndType, onDelete }) {
     }
   };
 
+  const openBoard = async (boardId) => {
+    try {
+      await increaseBoardHit(boardId);
+    } finally {
+      router.push(`/boards/${boardId}`);
+    }
+  };
+
   const handleItemClick = () => {
     if (swiped) {
       snapTo(0);
@@ -132,7 +141,7 @@ function SwipeableNotifItem({ item, onRead, onReadBySenderAndType, onDelete }) {
     if (item.type === 'FOLLOW') {
       router.push(`/users/${item.senderId}`);
     } else if (item.boardId) {
-      router.push(`/boards/${item.boardId}`);
+      openBoard(item.boardId);
     }
   };
 
