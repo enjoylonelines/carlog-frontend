@@ -40,6 +40,10 @@ export const getBoard = async (boardId) => {
   return promise;
 };
 
+export const increaseBoardHit = async (boardId) => {
+  await client.post(`/api/boards/hit/${boardId}`);
+};
+
 export const createBoard = async ({ content, hashtags = [], mediaFiles = [] }) => {
   const form = new FormData();
   form.append('content', content);
