@@ -98,6 +98,9 @@ const client = {
   put(url, data, config) {
     return this.request({ ...config, method: 'put', url, data });
   },
+  patch(url, data, config) {
+    return this.request({ ...config, method: 'patch', url, data });
+  },
   delete(url, config) {
     return this.request({ ...config, method: 'delete', url });
   },
