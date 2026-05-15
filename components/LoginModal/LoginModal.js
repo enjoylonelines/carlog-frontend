@@ -90,7 +90,7 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
         setError("");
       } else {
         setLoginIdStatus("dup");
-        setError("이미 사용 중인 아이디입니다.");
+        setError(res?.message || "아이디 확인에 실패했습니다.");
       }
     } catch (err) {
       setLoginIdStatus("dup");
@@ -106,7 +106,7 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
       return;
     }
     if (!EMAIL_REGEX.test(email)) {
-      setError("올바른 이메일 형식입니다.");
+      setError("올바른 이메일 형식을 입력해주세요.");
       return;
     }
     setCheckingEmail(true);
@@ -117,7 +117,7 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
         setError("");
       } else {
         setEmailStatus("dup");
-        setError("이미 가입된 이메일입니다.");
+        setError(res?.message || "이메일 확인에 실패했습니다.");
       }
     } catch (err) {
       setEmailStatus("dup");
