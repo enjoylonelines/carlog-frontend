@@ -78,6 +78,7 @@ export default function PostCard({ post }) {
   const likePendingRef = useRef(false);
 
   useEffect(() => {
+    if (!MY_USER_ID) return;
     if (isOwnPost) return;
     if (followCache[userId] !== undefined) return;
     let cancelled = false;
@@ -90,9 +91,10 @@ export default function PostCard({ post }) {
     return () => {
       cancelled = true;
     };
-  }, [userId, isOwnPost]);
+  }, [MY_USER_ID, userId, isOwnPost]);
 
   const handleFollow = async () => {
+    if (!MY_USER_ID) return;
     const next = !following;
     setFollowing(next);
     followCache[userId] = next;
@@ -124,6 +126,7 @@ export default function PostCard({ post }) {
 
   const handleLike = async (e) => {
     e.stopPropagation();
+    if (!MY_USER_ID) return;
     if (likePendingRef.current) return;
     likePendingRef.current = true;
 
