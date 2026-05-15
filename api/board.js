@@ -1,5 +1,8 @@
 import client from './client';
 
+const boardReadRequests = new Map();
+const BOARD_READ_DEDUPE_MS = 1000;
+
 export const getExploreBoards = async (page = 1, size = 18) => {
   const res = await client.get('/api/boards/explore', { params: { page, size } });
   return res?.data ?? { boards: [], hasNext: false };
@@ -15,8 +18,26 @@ export const searchBoards = async ({ pageNo = 1, tag = '', keyword = '', userId 
 };
 
 export const getBoard = async (boardId) => {
-  const res = await client.get(`/api/boards/read/${boardId}`);
-  return res?.data ?? null;
+  const now = Date.now();
+  const cached = boardReadRequests.get(boardId);
+
+  if (cached && now - cached.createdAt < BOARD_READ_DEDUPE_MS) {
+    return cached.promise;
+  }
+
+  const promise = client.get(`/api/boards/read/${boardId}`).then((res) => res?.data ?? null);
+  boardReadRequests.set(boardId, { promise, createdAt: now });
+
+  promise.finally(() => {
+    setTimeout(() => {
+      const latest = boardReadRequests.get(boardId);
+      if (latest?.promise === promise) {
+        boardReadRequests.delete(boardId);
+      }
+    }, BOARD_READ_DEDUPE_MS);
+  });
+
+  return promise;
 };
 
 export const createBoard = async ({ content, hashtags = [], mediaFiles = [] }) => {
