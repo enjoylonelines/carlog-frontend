@@ -25,16 +25,20 @@ function isPublicPath(pathname) {
 }
 
 function RouteGuard({ children }) {
-  const { user, showLoginModal, setShowLoginModal } = useContext(AuthContext);
+  const { user, showLoginModal, setShowLoginModal, setRedirectUrl } = useContext(AuthContext);
   const pathname = usePathname();
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
   const isPublic = isPublicPath(pathname);
 
   useEffect(() => {
-    if (!user && !isPublic && !showLoginModal) {
+    // 첫 진입이고, 로그인 안 했고, 공개 페이지가 아니면 모달 표시
+    if (!user && !isPublic && !hasCheckedAuth) {
+      setRedirectUrl(pathname);  // 현재 페이지를 redirect URL로 설정
       setShowLoginModal(true);
+      setHasCheckedAuth(true);
     }
-  }, [user, isPublic, showLoginModal, setShowLoginModal]);
+  }, [user, isPublic, hasCheckedAuth, setShowLoginModal, setRedirectUrl]);
 
   return (
     <>

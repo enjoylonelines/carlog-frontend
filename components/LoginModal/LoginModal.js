@@ -4,14 +4,14 @@ import { useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/contexts/AuthContext";
 import authApi from "@/api/authApi";
-import { checkLoginIdAvailable, checkEmailAvailable } from "@/api/user";
+import { checkLoginIdAvailable, checkEmailAvailable, checkLoginIdForSignup, checkEmailForSignup } from "@/api/user";
 import styles from "./LoginModal.module.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginModal({ showLoginModal, setShowLoginModal }) {
   const router = useRouter();
-  const { setUser, setAccessToken, setUserId } = useContext(AuthContext);
+  const { setUser, setAccessToken, setUserId, redirectUrl, setRedirectUrl } = useContext(AuthContext);
   const [mode, setMode] = useState("login"); // "login" | "register"
 
   // 로그인 폼
@@ -51,6 +51,7 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
   const handleCloseModal = () => {
     router.push('/');
     setShowLoginModal(false);
+    setRedirectUrl(null);
   };
 
   const handleLoginSubmit = async (e) => {
@@ -69,6 +70,11 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
       setShowLoginModal(false);
       setIdentifier("");
       setPassword("");
+
+      // redirectUrl이 있으면 그 페이지로, 없으면 홈으로 이동
+      const targetUrl = redirectUrl || '/';
+      setRedirectUrl(null);
+      router.push(targetUrl);
     } catch (err) {
       const msg = err.response?.data?.message || "아이디 또는 비밀번호가 올바르지 않습니다.";
       setError(msg);
@@ -84,7 +90,7 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
     }
     setCheckingId(true);
     try {
-      const res = await checkLoginIdAvailable(0, loginId);
+      const res = await checkLoginIdForSignup(loginId);
       if (res?.available) {
         setLoginIdStatus("ok");
         setError("");
@@ -111,7 +117,7 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
     }
     setCheckingEmail(true);
     try {
-      const res = await checkEmailAvailable(0, email);
+      const res = await checkEmailForSignup(email);
       if (res?.available) {
         setEmailStatus("ok");
         setError("");
@@ -253,7 +259,7 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
                 onClick={handleCheckLoginId}
                 disabled={checkingId || !loginId.trim()}
               >
-                {checkingId ? "확인 중..." : loginIdStatus === "ok" ? "✓" : "중복확인"}
+                {checkingId ? "확인 중..." : loginIdStatus === "ok" ? "✓ 사용가능" : "중복확인"}
               </button>
             </div>
 
@@ -277,7 +283,7 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
                 onClick={handleCheckEmail}
                 disabled={checkingEmail || !email.trim()}
               >
-                {checkingEmail ? "확인 중..." : emailStatus === "ok" ? "✓" : "중복확인"}
+                {checkingEmail ? "확인 중..." : emailStatus === "ok" ? "✓ 사용가능" : "중복확인"}
               </button>
             </div>
 

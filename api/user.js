@@ -46,3 +46,20 @@ export const checkEmailAvailable = async (userId, email) => {
     message: res?.data?.message ?? "확인에 실패했습니다"
   };
 };
+
+// 회원가입용 중복 확인 (로그인 전)
+export const checkLoginIdForSignup = async (loginId) => {
+  const res = await client.get(`/api/users/check/loginid`, { params: { loginId } });
+  return {
+    available: res?.data?.available ?? false,
+    message: res?.data?.message ?? "확인에 실패했습니다"
+  };
+};
+
+export const checkEmailForSignup = async (email) => {
+  const res = await client.get(`/api/users/check/email`, { params: { email } });
+  return {
+    available: res?.data?.available ?? false,
+    message: res?.data?.message ?? "확인에 실패했습니다"
+  };
+};
