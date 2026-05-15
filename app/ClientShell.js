@@ -11,19 +11,30 @@ import { markFeedStale } from './utils/feedRefresh';
 import NotificationContextProvider from '@/contexts/NotificationContext';
 import styles from './ClientShell.module.css';
 
-const PUBLIC_PATHS = ['/'];
+const PUBLIC_PATHS = ['/', '/explore'];
+
+// 동적 라우트 체크 함수 (예: /users/123)
+function isPublicPath(pathname) {
+  // 고정 경로 체크
+  if (PUBLIC_PATHS.includes(pathname)) return true;
+  
+  // 동적 라우트 체크
+  if (pathname.startsWith('/users/')) return true;
+  
+  return false;
+}
 
 function RouteGuard({ children }) {
   const { user, showLoginModal, setShowLoginModal } = useContext(AuthContext);
   const pathname = usePathname();
 
-  const isPublic = PUBLIC_PATHS.includes(pathname);
+  const isPublic = isPublicPath(pathname);
 
   useEffect(() => {
-    if (!user && !isPublic) {
+    if (!user && !isPublic && !showLoginModal) {
       setShowLoginModal(true);
     }
-  }, [user, isPublic, setShowLoginModal]);
+  }, [user, isPublic, showLoginModal, setShowLoginModal]);
 
   return (
     <>
