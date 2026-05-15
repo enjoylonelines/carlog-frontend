@@ -1,12 +1,12 @@
 :root {
-  --color-primary: #E03131;
-  --color-primary-hover: #C92A2A;
-  --color-primary-subtle: #FFF5F5;
-  --color-bg: #FAFAFA;
-  --color-card: #FFFFFF;
-  --color-text: #1A1A1A;
+  --color-primary: #e03131;
+  --color-primary-hover: #c92a2a;
+  --color-primary-subtle: #fff5f5;
+  --color-bg: #fafafa;
+  --color-card: #ffffff;
+  --color-text: #1a1a1a;
   --color-text-secondary: #737373;
-  --color-border: #DBDBDB;
+  --color-border: #dbdbdb;
   --navbar-height: 60px;
   --content-max-width: 600px;
   --border-radius-card: 16px;
@@ -14,7 +14,9 @@
   --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
@@ -24,7 +26,8 @@ html {
   height: 100%;
 }
 
-html, body {
+html,
+body {
   max-width: 100vw;
   overflow-x: hidden;
 }

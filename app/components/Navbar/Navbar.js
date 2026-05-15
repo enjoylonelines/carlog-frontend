@@ -1,13 +1,32 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useContext, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from './Navbar.module.css';
 import { searchUsers, getHashtags } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
+import { NotificationContext } from '../../../contexts/NotificationContext';
+import { AuthContext } from '../../../contexts/AuthContext';
+import { getUserProfile } from '../../../api/user';
 
 export default function Navbar() {
   const router = useRouter();
+  const { unreadCount } = useContext(NotificationContext);
+  const { userId } = useContext(AuthContext);
+  const [profileImageUrl, setProfileImageUrl] = useState(null);
+  const [username, setUsername] = useState('');
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+    setImgError(false);
+    getUserProfile(userId).then((data) => {
+      if (data) {
+        setProfileImageUrl(data.profileImageUrl ?? null);
+        setUsername(data.username ?? '');
+      }
+    });
+  }, [userId]);
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState([]);
   const [tags, setTags] = useState([]);
@@ -20,10 +39,7 @@ export default function Navbar() {
     clearTimeout(debounceRef.current);
     if (val.trim().length >= 1) {
       debounceRef.current = setTimeout(async () => {
-        const [usersData, tagsData] = await Promise.all([
-          searchUsers(val.trim()),
-          getHashtags(val.trim()),
-        ]);
+        const [usersData, tagsData] = await Promise.all([searchUsers(val.trim()), getHashtags(val.trim())]);
         setUsers(Array.isArray(usersData) ? usersData : []);
         setTags(Array.isArray(tagsData) ? tagsData.slice(0, 5) : []);
         setShowDrop(true);
@@ -94,10 +110,7 @@ export default function Navbar() {
                         router.push(`/users/${user.userId}`);
                       }}
                     >
-                      <div
-                        className={styles.dropAvatar}
-                        style={{ background: avatarColor(user.userId) }}
-                      >
+                      <div className={styles.dropAvatar} style={{ background: avatarColor(user.userId) }}>
                         {(user.username || 'U')[0].toUpperCase()}
                       </div>
                       <div className={styles.dropInfo}>
@@ -134,16 +147,39 @@ export default function Navbar() {
 
         <div className={styles.actions}>
           <Link href="/notifications" className={styles.iconBtn} title="알림">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
+            <span className={styles.bellWrap}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                width="22"
+                height="22"
+              >
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {unreadCount > 0 && <span className={styles.badge}>{unreadCount > 99 ? '99+' : unreadCount}</span>}
+            </span>
           </Link>
-          <Link href="/profile" className={styles.iconBtn} title="프로필">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+          <Link href="/profile" className={styles.profileBtn} title="프로필">
+            {profileImageUrl && !imgError ? (
+              <img
+                src={profileImageUrl}
+                alt={username}
+                className={styles.profileImg}
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <div
+                className={styles.profileFallback}
+                style={{ background: avatarColor(userId) }}
+              >
+                {username ? username[0].toUpperCase() : '?'}
+              </div>
+            )}
           </Link>
         </div>
       </div>

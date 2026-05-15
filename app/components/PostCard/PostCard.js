@@ -1,29 +1,24 @@
-"use client";
-import { useRef, useState, useEffect, useContext } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import styles from "./PostCard.module.css";
-import { AuthContext } from "../../../contexts/AuthContext";
-import { checkFollow, followUser, unfollowUser } from "../../../api";
-import { avatarColor as getAvatarColor } from "../../utils/avatar";
-import { followCache } from "../../utils/followCache";
-import { createLike, deleteLike } from "@/api/like";
+'use client';
+import { useRef, useState, useEffect, useContext } from 'react';
+import { useRouter } from 'next/navigation';
+import styles from './PostCard.module.css';
+import { AuthContext } from '../../../contexts/AuthContext';
+import { checkFollow, followUser, unfollowUser } from '../../../api';
+import { avatarColor as getAvatarColor } from '../../utils/avatar';
+import { followCache } from '../../utils/followCache';
+import { likeCache } from '../../utils/likeCache';
+import { createLike, deleteLike } from '@/api/like';
 
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL;
-const mediaUrl = (url) => {
-  if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return `${API_ORIGIN}${url}`;
-};
+const isSrc = (url) => !!url && (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://'));
 
 function timeAgo(dateStr) {
-  if (!dateStr) return "";
+  if (!dateStr) return '';
   const diff = (Date.now() - new Date(dateStr)) / 1000;
-  if (diff < 60) return "방금 전";
+  if (diff < 60) return '방금 전';
   if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
   if (diff < 2592000) return `${Math.floor(diff / 86400)}일 전`;
-  return new Date(dateStr).toLocaleDateString("ko-KR");
+  return new Date(dateStr).toLocaleDateString('ko-KR');
 }
 
 export default function PostCard({ post }) {
@@ -54,25 +49,44 @@ export default function PostCard({ post }) {
   const isLong = content && content.length > 80;
   const isOwnPost = userId === MY_USER_ID;
 
+  const [avatarErrSrc, setAvatarErrSrc] = useState(null);
+
   // null = 로딩 중, true/false = 확정
   const [following, setFollowing] = useState(() => followCache[userId] ?? null);
 
-  // 좋아요
-  const [liked, setLiked] = useState(() => (isLike ?? 0) === 1);
-  const [likes, setLikes] = useState(() => likeCount ?? 0);
+  // 좋아요 — prop 변경 감지 + likeCache 우선 적용
+  const [{ prevIsLike, prevLikeCount, liked, likes }, setLikeState] = useState(() => {
+    const cached = likeCache[boardId];
+    return {
+      prevIsLike: isLike ?? 0,
+      prevLikeCount: likeCount ?? 0,
+      liked: cached ? cached.liked : (isLike ?? 0) === 1,
+      likes: cached ? cached.likes : likeCount ?? 0,
+    };
+  });
+
+  if ((isLike ?? 0) !== prevIsLike || (likeCount ?? 0) !== prevLikeCount) {
+    const cached = likeCache[boardId];
+    setLikeState({
+      prevIsLike: isLike ?? 0,
+      prevLikeCount: likeCount ?? 0,
+      liked: cached ? cached.liked : (isLike ?? 0) === 1,
+      likes: cached ? cached.likes : likeCount ?? 0,
+    });
+  }
+
+  const likePendingRef = useRef(false);
 
   useEffect(() => {
     if (isOwnPost) return;
     if (followCache[userId] !== undefined) return;
     let cancelled = false;
-    checkFollow({ userId: MY_USER_ID, targetId: userId }).then(
-      (isFollowing) => {
-        if (!cancelled) {
-          followCache[userId] = isFollowing;
-          setFollowing(isFollowing);
-        }
-      },
-    );
+    checkFollow({ userId: MY_USER_ID, targetId: userId }).then((isFollowing) => {
+      if (!cancelled) {
+        followCache[userId] = isFollowing;
+        setFollowing(isFollowing);
+      }
+    });
     return () => {
       cancelled = true;
     };
@@ -100,33 +114,37 @@ export default function PostCard({ post }) {
     event.stopPropagation();
     const list = mediaListRef.current;
     if (!list) return;
-    const nextIndex = Math.min(
-      Math.max(currentMediaIndex + direction, 0),
-      images.length - 1,
-    );
+    const nextIndex = Math.min(Math.max(currentMediaIndex + direction, 0), images.length - 1);
     list.scrollTo({
       left: nextIndex * list.clientWidth,
-      behavior: "smooth",
+      behavior: 'smooth',
     });
     setCurrentMediaIndex(nextIndex);
   };
 
-  // 좋아요 이벤트
   const handleLike = async (e) => {
     e.stopPropagation();
+    if (likePendingRef.current) return;
+    likePendingRef.current = true;
+
+    const nextLiked = !liked;
+    const nextLikes = nextLiked ? likes + 1 : likes - 1;
+    setLikeState((prev) => ({ ...prev, liked: nextLiked, likes: nextLikes }));
+    likeCache[boardId] = { liked: nextLiked, likes: nextLikes };
 
     try {
-      if (liked) {
-        const res = await deleteLike(boardId);
-        setLiked((res?.isLiked ?? 0) === 1);
-        setLikes(res?.likeCount ?? 0);
-      } else {
-        const data = await createLike(boardId);
-        setLiked((data?.isLiked ?? 0) === 1);
-        setLikes(data?.likeCount ?? 0);
+      const res = nextLiked ? await createLike(boardId) : await deleteLike(boardId);
+      if (res) {
+        const confirmed = { liked: (res.isLiked ?? 0) === 1, likes: res.likeCount ?? nextLikes };
+        setLikeState((prev) => ({ ...prev, ...confirmed }));
+        likeCache[boardId] = confirmed;
       }
     } catch (err) {
-      console.error("좋아요 처리 실패", err);
+      console.error('좋아요 처리 실패', err);
+      setLikeState((prev) => ({ ...prev, liked: !nextLiked, likes: likes }));
+      likeCache[boardId] = { liked: !nextLiked, likes };
+    } finally {
+      likePendingRef.current = false;
     }
   };
 
@@ -135,51 +153,37 @@ export default function PostCard({ post }) {
       <div className={styles.header}>
         <div
           className={styles.avatarWrap}
-          onClick={() =>
-            router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)
-          }
+          onClick={() => router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) =>
-            e.key === "Enter" &&
-            router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)
-          }
+          onKeyDown={(e) => e.key === 'Enter' && router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
         >
-          {profileImageUrl ? (
-            <Image
+          {isSrc(profileImageUrl) && profileImageUrl !== avatarErrSrc ? (
+            <img
               src={profileImageUrl}
               alt={username}
-              width={40}
-              height={40}
               className={styles.avatarImg}
+              onError={() => setAvatarErrSrc(profileImageUrl)}
             />
           ) : (
             <div className={styles.avatar} style={{ background: color }}>
-              {(username || "U")[0].toUpperCase()}
+              {(username || 'U')[0].toUpperCase()}
             </div>
           )}
         </div>
         <div
           className={styles.meta}
-          onClick={() =>
-            router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)
-          }
+          onClick={() => router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) =>
-            e.key === "Enter" &&
-            router.push(userId === MY_USER_ID ? "/profile" : `/users/${userId}`)
-          }
+          onKeyDown={(e) => e.key === 'Enter' && router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
         >
-          <span className={styles.username}>{username || "알 수 없음"}</span>
+          <span className={styles.username}>{username || '알 수 없음'}</span>
           <span className={styles.time}>{timeAgo(createdAt)}</span>
         </div>
         {!isOwnPost && following !== null && (
-          <button
-            className={`${styles.followBtn} ${following ? styles.following : ""}`}
-            onClick={handleFollow}
-          >
-            {following ? "팔로잉" : "팔로우"}
+          <button className={`${styles.followBtn} ${following ? styles.following : ''}`} onClick={handleFollow}>
+            {following ? '팔로잉' : '팔로우'}
           </button>
         )}
       </div>
@@ -189,28 +193,20 @@ export default function PostCard({ post }) {
         onClick={() => router.push(`/boards/${boardId}`)}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) =>
-          e.key === "Enter" && router.push(`/boards/${boardId}`)
-        }
+        onKeyDown={(e) => e.key === 'Enter' && router.push(`/boards/${boardId}`)}
       >
         {images.length > 0 && (
           <div className={styles.mediaFrame}>
-            <div
-              className={styles.mediaList}
-              ref={mediaListRef}
-              onScroll={handleMediaScroll}
-            >
+            <div className={styles.mediaList} ref={mediaListRef} onScroll={handleMediaScroll}>
               {images.map((url, index) => (
                 <div className={styles.imageWrap} key={`${url}-${index}`}>
-                  <Image
-                    fill
-                    unoptimized
-                    src={mediaUrl(url)}
+                  <img
+                    src={isSrc(url) ? url : '/no-image.svg'}
                     alt={`${username} 게시물 이미지 ${index + 1}`}
                     className={styles.image}
                     loading="lazy"
                     onError={(e) => {
-                      e.currentTarget.src = "/no-image.svg";
+                      e.currentTarget.src = '/no-image.svg';
                     }}
                   />
                 </div>
@@ -279,7 +275,7 @@ export default function PostCard({ post }) {
               {!expanded && isLong ? (
                 <>
                   {content.slice(0, 80)}
-                  {"... "}
+                  {'... '}
                   <button
                     className={styles.moreBtn}
                     onClick={(e) => {
@@ -303,8 +299,8 @@ export default function PostCard({ post }) {
                 width="14"
                 height="14"
                 viewBox="0 0 24 24"
-                fill={liked ? "#ef4444" : "none"}
-                stroke={liked ? "#ef4444" : "currentColor"}
+                fill={liked ? '#ef4444' : 'none'}
+                stroke={liked ? '#ef4444' : 'currentColor'}
                 strokeWidth="2"
               >
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -312,28 +308,14 @@ export default function PostCard({ post }) {
               {likes.toLocaleString()}
             </button>
             <span className={styles.stat}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
               {(hitcount || 0).toLocaleString()}
             </span>
             <span className={styles.stat}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               {(commentCount || 0).toLocaleString()}

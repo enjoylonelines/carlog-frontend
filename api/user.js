@@ -21,3 +21,22 @@ export const uploadProfileImage = async (userId, file) => {
   const res = await client.post(`/api/users/${userId}/profile-image`, formData);
   return res?.data?.profileImageUrl ?? null;
 };
+
+export const updateUserAccount = async (userId, payload) => {
+  const res = await client.patch(`/api/users/${userId}/account`, payload);
+  return res?.data ?? null;
+};
+
+export const deleteUser = async (userId, immediate) => {
+  await client.delete(`/api/users/${userId}`, { params: { immediate } });
+};
+
+export const checkLoginIdAvailable = async (userId, loginId) => {
+  const res = await client.get(`/api/users/${userId}/check-loginid`, { params: { loginId } });
+  return res?.data ?? null;
+};
+
+export const checkEmailAvailable = async (userId, email) => {
+  const res = await client.get(`/api/users/${userId}/check-email`, { params: { email } });
+  return res?.data ?? null;
+};

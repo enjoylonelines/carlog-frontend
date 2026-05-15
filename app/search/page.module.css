@@ -1,7 +1,7 @@
 .wrap {
   max-width: var(--content-max-width);
   margin: 0 auto;
- /* padding-top: var(--navbar-height); */
+  /* padding-top: var(--navbar-height); */
   padding-bottom: 80px;
   min-height: 100vh;
 }
@@ -28,7 +28,7 @@
 }
 
 .backBtn:hover {
-  background: #F0F0F0;
+  background: #f0f0f0;
 }
 
 .queryText {
@@ -59,7 +59,9 @@
   justify-content: center;
   gap: 6px;
   border-bottom: 2px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .tab:hover {
@@ -74,7 +76,7 @@
 
 .tabCount {
   font-size: 12px;
-  background: #EFEFEF;
+  background: #efefef;
   border-radius: 10px;
   padding: 1px 7px;
   color: var(--color-text-secondary);
@@ -98,14 +100,16 @@
 .spinner {
   width: 28px;
   height: 28px;
-  border: 3px solid #E0E0E0;
+  border: 3px solid #e0e0e0;
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .noResult {
@@ -139,7 +143,7 @@
 }
 
 .userRow:hover {
-  background: #F9F9F9;
+  background: #f9f9f9;
 }
 
 .userAvatar {
@@ -187,16 +191,18 @@
 .tagChip {
   background: var(--color-primary-subtle);
   color: var(--color-primary);
-  border: 1px solid #FFCCCC;
+  border: 1px solid #ffcccc;
   border-radius: 20px;
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .tagChip:hover {
-  background: #FFE0E0;
+  background: #ffe0e0;
   border-color: var(--color-primary);
 }

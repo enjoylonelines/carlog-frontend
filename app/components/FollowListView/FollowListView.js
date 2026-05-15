@@ -1,11 +1,22 @@
 'use client';
 import { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { getFollowers, getFollowings } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
 import styles from './FollowListView.module.css';
+
+function FollowAvatar({ src, color, initial }) {
+  const [errSrc, setErrSrc] = useState(null);
+  if (src && src !== errSrc) {
+    return <img src={src} alt="" className={styles.avatar} onError={() => setErrSrc(src)} />;
+  }
+  return (
+    <div className={styles.avatar} style={{ background: color }}>
+      {initial}
+    </div>
+  );
+}
 
 export default function FollowListView({ initialTab = 'followers', userId: userIdProp }) {
   const { userId: ctxUserId } = useContext(AuthContext);
@@ -20,23 +31,32 @@ export default function FollowListView({ initialTab = 'followers', userId: userI
 
     (async () => {
       setLoading(true);
-      const data = tab === 'followers'
-        ? await getFollowers(userId)
-        : await getFollowings(userId);
+      const data = tab === 'followers' ? await getFollowers(userId) : await getFollowings(userId);
       if (!cancelled) {
         setList(data || []);
         setLoading(false);
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [tab, userId]);
 
   return (
     <div className={styles.wrap}>
       <div className={styles.topBar}>
         <button className={styles.backBtn} onClick={() => router.back()} aria-label="뒤로">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
@@ -60,9 +80,7 @@ export default function FollowListView({ initialTab = 'followers', userId: userI
       </div>
 
       <div className={styles.list}>
-        {loading && (
-          <p className={styles.empty}>불러오는 중...</p>
-        )}
+        {loading && <p className={styles.empty}>불러오는 중...</p>}
 
         {!loading && list.length === 0 && (
           <p className={styles.empty}>
@@ -70,29 +88,24 @@ export default function FollowListView({ initialTab = 'followers', userId: userI
           </p>
         )}
 
-        {!loading && list.map((item) => {
-          const displayUserId = tab === 'followers' ? item.userId : item.targetId;
-          const color = avatarColor(displayUserId);
-          const initial = item.username ? item.username[0].toUpperCase() : '?';
-          return (
-            <button
-              key={`${item.userId}-${item.targetId}`}
-              className={styles.item}
-              onClick={() => router.push(`/users/${displayUserId}`)}
-            >
-              {item.profileImageUrl ? (
-                <Image src={item.profileImageUrl} alt="" width={44} height={44} className={styles.avatar} />
-              ) : (
-                <div className={styles.avatar} style={{ background: color }}>
-                  {initial}
+        {!loading &&
+          list.map((item) => {
+            const displayUserId = tab === 'followers' ? item.userId : item.targetId;
+            const color = avatarColor(displayUserId);
+            const initial = item.username ? item.username[0].toUpperCase() : '?';
+            return (
+              <button
+                key={`${item.userId}-${item.targetId}`}
+                className={styles.item}
+                onClick={() => router.push(`/users/${displayUserId}`)}
+              >
+                <FollowAvatar src={item.profileImageUrl} color={color} initial={initial} />
+                <div className={styles.info}>
+                  <span className={styles.username}>{item.username}</span>
                 </div>
-              )}
-              <div className={styles.info}>
-                <span className={styles.username}>{item.username}</span>
-              </div>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
       </div>
     </div>
   );

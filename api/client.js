@@ -1,15 +1,15 @@
-import axios from "axios";
+import axios from 'axios';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const instance = axios.create({ baseURL: BASE_URL });
 
 instance.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("accessToken");
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers = config.headers ?? {};
-      config.headers["Authorization"] = `Bearer ${token}`;
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
   }
   return config;
@@ -33,12 +33,12 @@ instance.interceptors.response.use(
 const cache = new Map();
 
 function getCacheKey(url, params) {
-  return url + (params ? "?" + new URLSearchParams(params).toString() : "");
+  return url + (params ? '?' + new URLSearchParams(params).toString() : '');
 }
 
 const client = {
   async request(config) {
-    const isGet = config.method === "get";
+    const isGet = config.method === 'get';
     const cacheKey = isGet ? getCacheKey(config.url, config.params) : null;
 
     if (isGet && cacheKey && cache.has(cacheKey)) {
@@ -68,13 +68,15 @@ const client = {
 
   // 변이된 URL과 관련된 캐시 항목 삭제
   _invalidateRelated(mutatedUrl) {
-    const base = "/" + mutatedUrl.split("/").slice(1, 3).join("/");
+    const base = '/' + mutatedUrl.split('/').slice(1, 3).join('/');
     // 댓글 변이 시 boards 캐시도 함께 무효화
-    const bases = base.startsWith("/api/comments")
-      ? [base, "/api/boards"]
-      : base.startsWith("/api/follows")
-        ? [base, "/api/users"]
-        : [base];
+    const bases = base.startsWith('/api/comments')
+      ? [base, '/api/boards']
+      : base.startsWith('/api/follows')
+        ? [base, '/api/users']
+        : base.startsWith('/api/users')
+          ? [base, '/api/boards']
+          : [base];
     for (const key of cache.keys()) {
       if (bases.some((b) => key.startsWith(b))) cache.delete(key);
     }
@@ -88,16 +90,16 @@ const client = {
   },
 
   get(url, config) {
-    return this.request({ ...config, method: "get", url });
+    return this.request({ ...config, method: 'get', url });
   },
   post(url, data, config) {
-    return this.request({ ...config, method: "post", url, data });
+    return this.request({ ...config, method: 'post', url, data });
   },
   put(url, data, config) {
-    return this.request({ ...config, method: "put", url, data });
+    return this.request({ ...config, method: 'put', url, data });
   },
   delete(url, config) {
-    return this.request({ ...config, method: "delete", url });
+    return this.request({ ...config, method: 'delete', url });
   },
 };
 

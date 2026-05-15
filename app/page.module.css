@@ -43,7 +43,7 @@
   justify-content: space-between;
   padding: 8px 16px;
   background: var(--color-primary-subtle);
-  border-bottom: 1px solid #FECDCD;
+  border-bottom: 1px solid #fecdcd;
   font-size: 13px;
   color: var(--color-primary);
 }

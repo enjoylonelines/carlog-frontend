@@ -18,6 +18,12 @@
   letter-spacing: -0.3px;
 }
 
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .readAllBtn {
   font-size: 13px;
   font-weight: 600;
@@ -26,6 +32,42 @@
   border: none;
   cursor: pointer;
   padding: 4px 0;
+}
+
+.deleteAllBtn {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.swipeRow {
+  position: relative;
+  overflow: hidden;
+}
+
+.swipeInner {
+  position: relative;
+  z-index: 1;
+  will-change: transform;
+}
+
+.deleteReveal {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 72px;
+  height: 100%;
+  background: #E03131;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
 }
 
 .sectionLabel {
@@ -51,7 +93,7 @@
 }
 
 .item:hover {
-  background: #F5F5F5;
+  background: #f5f5f5;
 }
 
 .item.unread {
@@ -59,7 +101,7 @@
 }
 
 .item.unread:hover {
-  background: #FFEAEA;
+  background: #ffeaea;
 }
 
 .avatarWrap {
@@ -77,6 +119,14 @@
   font-size: 17px;
   font-weight: 700;
   color: white;
+}
+
+.avatarImg {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
 }
 
 .badge {
@@ -115,6 +165,16 @@
 
 .message strong {
   font-weight: 700;
+}
+
+.commentPreview {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .time {
