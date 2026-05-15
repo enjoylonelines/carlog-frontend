@@ -3,7 +3,7 @@ import { useRef, useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './PostCard.module.css';
 import { AuthContext } from '../../../contexts/AuthContext';
-import { checkFollow, followUser, unfollowUser } from '../../../api';
+import { checkFollow, followUser, unfollowUser, increaseBoardHit } from '../../../api';
 import { avatarColor as getAvatarColor } from '../../utils/avatar';
 import { followCache } from '../../utils/followCache';
 import { likeCache } from '../../utils/likeCache';
@@ -148,6 +148,14 @@ export default function PostCard({ post }) {
     }
   };
 
+  const openBoard = async () => {
+    try {
+      await increaseBoardHit(boardId);
+    } finally {
+      router.push(`/boards/${boardId}`);
+    }
+  };
+
   return (
     <article className={styles.card}>
       <div className={styles.header}>
@@ -190,10 +198,12 @@ export default function PostCard({ post }) {
 
       <div
         className={styles.cardLink}
-        onClick={() => router.push(`/boards/${boardId}`)}
+        onClick={openBoard}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && router.push(`/boards/${boardId}`)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') openBoard();
+        }}
       >
         {images.length > 0 && (
           <div className={styles.mediaFrame}>

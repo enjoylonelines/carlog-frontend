@@ -2,7 +2,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import HashtagBar from '../HashtagBar/HashtagBar';
-import { getHashtags, getExploreBoards } from '../../../api';
+import { getHashtags, getExploreBoards, increaseBoardHit } from '../../../api';
 import { useScrollRestore } from '../../hooks/useScrollRestore';
 import styles from './ExploreGrid.module.css';
 
@@ -114,6 +114,14 @@ export default function ExploreGrid() {
 
   const displayed = selectedTag ? items.filter((b) => b.hashtags?.includes(selectedTag)) : items;
 
+  const openBoard = async (boardId) => {
+    try {
+      await increaseBoardHit(boardId);
+    } finally {
+      router.push(`/boards/${boardId}`);
+    }
+  };
+
   return (
     <>
       <HashtagBar hashtags={hashtags} selected={selectedTag} onSelect={handleTagSelect} />
@@ -126,7 +134,7 @@ export default function ExploreGrid() {
               <button
                 key={board.boardId}
                 className={styles.cell}
-                onClick={() => router.push(`/boards/${board.boardId}`)}
+                onClick={() => openBoard(board.boardId)}
               >
                 <img
                   src={imageUrl}
