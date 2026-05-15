@@ -23,7 +23,7 @@ export const uploadProfileImage = async (userId, file) => {
 };
 
 export const updateUserAccount = async (userId, payload) => {
-  const res = await client.patch(`/api/users/${userId}/account`, payload);
+  const res = await client.put(`/api/users/${userId}/account`, payload);
   return res?.data ?? null;
 };
 
