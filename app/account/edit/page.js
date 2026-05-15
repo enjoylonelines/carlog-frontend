@@ -304,7 +304,11 @@ export default function EditAccountPage() {
                 onClick={() => router.push('/profile')}
                 disabled={submitting}
               >
-                취소
+                <span style={{ opacity: 0 }}>.</span>
+                취
+                <span style={{ opacity: 0 }}>공.</span>
+                소
+                <span style={{ opacity: 0 }}>.</span>
               </button>
             </div>
           </div>

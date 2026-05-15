@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AuthContext } from "@/contexts/AuthContext";
 import authApi from "@/api/authApi";
 import { checkLoginIdAvailable, checkEmailAvailable } from "@/api/user";
@@ -9,6 +10,7 @@ import styles from "./LoginModal.module.css";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginModal({ showLoginModal, setShowLoginModal }) {
+  const router = useRouter();
   const { setUser, setAccessToken, setUserId } = useContext(AuthContext);
   const [mode, setMode] = useState("login"); // "login" | "register"
 
@@ -44,6 +46,12 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
       return () => window.removeEventListener("popstate", handlePopState);
     }
   }, [showLoginModal, setShowLoginModal]);
+
+  // X 버튼 클릭 시 홈으로 이동
+  const handleCloseModal = () => {
+    setShowLoginModal(false);
+    router.push('/');
+  };
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -158,9 +166,12 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
-        <div className={styles.logo}>
-          <span className={styles.logoDot} />
-          CARLOG
+        <div className={styles.modalHeader}>
+          <div className={styles.logo}>
+            <span className={styles.logoDot} />
+            CARLOG
+          </div>
+          <button className={styles.closeBtn} onClick={handleCloseModal}>✕</button>
         </div>
         <p className={styles.tagline}>자동차 이야기를 나누는 공간</p>
 
