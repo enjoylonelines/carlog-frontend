@@ -127,6 +127,37 @@
   display: block;
 }
 
+.previewList {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+
+.previewItem {
+  position: relative;
+  flex: 0 0 100%;
+  height: 100%;
+  scroll-snap-align: start;
+}
+
+.removeMediaBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 30px;
+  text-align: center;
+  cursor: pointer;
+}
+
 .fileInput {
   display: none;
 }
