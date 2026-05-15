@@ -33,10 +33,33 @@ export const deleteUser = async (userId, immediate) => {
 
 export const checkLoginIdAvailable = async (userId, loginId) => {
   const res = await client.get(`/api/users/${userId}/check-loginid`, { params: { loginId } });
-  return res?.data ?? null;
+  return {
+    available: res?.data?.available ?? false,
+    message: res?.data?.message ?? "확인에 실패했습니다"
+  };
 };
 
 export const checkEmailAvailable = async (userId, email) => {
   const res = await client.get(`/api/users/${userId}/check-email`, { params: { email } });
-  return res?.data ?? null;
+  return {
+    available: res?.data?.available ?? false,
+    message: res?.data?.message ?? "확인에 실패했습니다"
+  };
+};
+
+// 회원가입용 중복 확인 (로그인 전)
+export const checkLoginIdForSignup = async (loginId) => {
+  const res = await client.get(`/api/users/check/loginid`, { params: { loginId } });
+  return {
+    available: res?.data?.available ?? false,
+    message: res?.data?.message ?? "확인에 실패했습니다"
+  };
+};
+
+export const checkEmailForSignup = async (email) => {
+  const res = await client.get(`/api/users/check/email`, { params: { email } });
+  return {
+    available: res?.data?.available ?? false,
+    message: res?.data?.message ?? "확인에 실패했습니다"
+  };
 };

@@ -33,6 +33,8 @@ function AuthContextProvider({ children }) {
     const [showExpiryWarning, setShowExpiryWarning] = useState(false);
     // 로그인 모달 상태
     const [showLoginModal, setShowLoginModal] = useState(false);
+    // 로그인 후 리다이렉트할 URL
+    const [redirectUrl, setRedirectUrl] = useState(null);
     const warnTimerRef = useRef(null);
     const expireTimerRef = useRef(null);
 
@@ -43,6 +45,7 @@ function AuthContextProvider({ children }) {
         setUserId(null);
         setTokenExpiresAt(null);
         setShowExpiryWarning(false);
+        setRedirectUrl(null);
     }, []);
 
   // Context를 통해서 제공할 전역 객체
@@ -58,6 +61,8 @@ function AuthContextProvider({ children }) {
     setShowExpiryWarning,
     showLoginModal,
     setShowLoginModal,
+    redirectUrl,
+    setRedirectUrl,
     logout,
   };
 

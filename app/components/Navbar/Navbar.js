@@ -12,7 +12,7 @@ import { getUserProfile } from '../../../api/user';
 export default function Navbar() {
   const router = useRouter();
   const { unreadCount } = useContext(NotificationContext);
-  const { userId } = useContext(AuthContext);
+  const { userId, setShowLoginModal, setRedirectUrl } = useContext(AuthContext);
   const [profileImageUrl, setProfileImageUrl] = useState(null);
   const [username, setUsername] = useState('');
   const [imgError, setImgError] = useState(false);
@@ -57,6 +57,14 @@ export default function Navbar() {
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') goSearch();
+  };
+
+  const handleProfileClick = (e) => {
+    if (!userId) {
+      e.preventDefault();
+      setRedirectUrl('/profile');
+      setShowLoginModal(true);
+    }
   };
 
   const hasResults = users.length > 0 || tags.length > 0;
@@ -164,7 +172,7 @@ export default function Navbar() {
               {unreadCount > 0 && <span className={styles.badge}>{unreadCount > 99 ? '99+' : unreadCount}</span>}
             </span>
           </Link>
-          <Link href="/profile" className={styles.profileBtn} title="프로필">
+          <Link href="/profile" className={styles.profileBtn} title="프로필" onClick={handleProfileClick}>
             {profileImageUrl && !imgError ? (
               <img
                 src={profileImageUrl}

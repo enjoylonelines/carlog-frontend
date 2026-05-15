@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useContext } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { NotificationContext } from '../../../contexts/NotificationContext';
+import { AuthContext } from '../../../contexts/AuthContext';
 import styles from './BottomNav.module.css';
 
 const HomeIcon = () => (
@@ -82,6 +83,7 @@ const HIDE_THRESHOLD = 8;
 export default function BottomNav({ onCreateClick }) {
   const pathname = usePathname();
   const { unreadCount } = useContext(NotificationContext);
+  const { userId, setShowLoginModal, setRedirectUrl } = useContext(AuthContext);
   const lastScrollY = useRef(0);
   // prevPath를 state에 함께 저장해 render 중 비교 (ref.current 읽기 금지 대응)
   const [{ prevPath, scrollHidden }, setNavState] = useState({
@@ -111,6 +113,14 @@ export default function BottomNav({ onCreateClick }) {
 
   const isDetailPage = pathname.startsWith('/boards/');
 
+  const handleNavClick = (e, item) => {
+    if (item.id === 'profile' && !userId) {
+      e.preventDefault();
+      setRedirectUrl('/profile');
+      setShowLoginModal(true);
+    }
+  };
+
   return (
     <nav className={`${styles.nav} ${scrollHidden || isDetailPage ? styles.hidden : ''}`}>
       <div className={styles.inner}>
@@ -139,6 +149,7 @@ export default function BottomNav({ onCreateClick }) {
               href={item.path}
               className={`${styles.item} ${active ? styles.active : ''}`}
               aria-label={item.label}
+              onClick={(e) => handleNavClick(e, item)}
             >
               <span className={styles.icon}>
                 <item.Icon />
