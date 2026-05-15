@@ -49,8 +49,8 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
 
   // X 버튼 클릭 시 홈으로 이동
   const handleCloseModal = () => {
-    setShowLoginModal(false);
     router.push('/');
+    setShowLoginModal(false);
   };
 
   const handleLoginSubmit = async (e) => {
