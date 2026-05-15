@@ -26,7 +26,7 @@ export default function DeleteConfirmPage() {
       setUser('');
       setAccessToken('');
       localStorage.removeItem('userId');
-      router.push('/login');
+      router.push('/');
     } catch {
       setError('탈퇴 처리 중 오류가 발생했습니다. 다시 시도해 주세요.');
     } finally {

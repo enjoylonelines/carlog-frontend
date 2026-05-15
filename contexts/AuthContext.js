@@ -31,6 +31,8 @@ function AuthContextProvider({ children }) {
     // 토큰 만료 관련 상태
     const [tokenExpiresAt, setTokenExpiresAt] = useState(null);
     const [showExpiryWarning, setShowExpiryWarning] = useState(false);
+    // 로그인 모달 상태
+    const [showLoginModal, setShowLoginModal] = useState(false);
     const warnTimerRef = useRef(null);
     const expireTimerRef = useRef(null);
 
@@ -43,12 +45,6 @@ function AuthContextProvider({ children }) {
         setShowExpiryWarning(false);
     }, []);
 
-  const logout = () => {
-    setUser('');
-    setAccessToken('');
-    setUserId(null);
-  };
-
   // Context를 통해서 제공할 전역 객체
   const value = {
     user,
@@ -57,10 +53,11 @@ function AuthContextProvider({ children }) {
     setAccessToken,
     userId,
     setUserId,
-        tokenExpiresAt,
-        showExpiryWarning,
-        setShowExpiryWarning,
-        logout,
+    tokenExpiresAt,
+    showExpiryWarning,
+    setShowExpiryWarning,
+    showLoginModal,
+    setShowLoginModal,
     logout,
   };
 

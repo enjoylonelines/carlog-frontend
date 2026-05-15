@@ -131,6 +131,7 @@ export default function ProfileView() {
   const handleLogout = () => {
     setShowSettingsMenu(false);
     logout();
+    router.push('/');
   };
 
 return (
@@ -157,8 +158,11 @@ return (
             </button>
             {showSettingsMenu && (
               <div className={styles.settingsMenu}>
-                <button className={styles.settingsItem} onClick={() => setShowSettingsMenu(false)}>
-                  비밀번호 변경
+                <button className={styles.settingsItem} onClick={() => {
+                  setShowSettingsMenu(false);
+                  router.push('/account/edit');
+                }}>
+                  개인정보 수정
                 </button>
                 <div className={styles.settingsDivider} />
                 <button className={`${styles.settingsItem} ${styles.settingsItemDanger}`} onClick={handleLogout}>

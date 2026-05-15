@@ -40,7 +40,7 @@ export default function EditAccountPage() {
   useEffect(() => {
     const storedId = localStorage.getItem('userId');
     if (!storedId) {
-      router.push('/login');
+      router.push('/');
       return;
     }
     const id = Number(storedId);
@@ -286,17 +286,27 @@ export default function EditAccountPage() {
           {success && <p className={styles.msgOk}>{success}</p>}
 
           <div className={styles.btnGroup}>
-            <button type="submit" className={styles.btnPrimary} disabled={submitting}>
-              {submitting ? '저장 중...' : '수정 완료'}
-            </button>
             <button
               type="button"
-              className={styles.btnCancel}
-              onClick={() => router.push('/profile')}
+              className={styles.btnDelete}
+              onClick={() => router.push('/account/delete')}
               disabled={submitting}
             >
-              취소
+              회원 탈퇴
             </button>
+            <div className={styles.btnGroupRight}>
+              <button type="submit" className={styles.btnPrimary} disabled={submitting}>
+                {submitting ? '저장 중...' : '수정 완료'}
+              </button>
+              <button
+                type="button"
+                className={styles.btnCancel}
+                onClick={() => router.push('/profile')}
+                disabled={submitting}
+              >
+                취소
+              </button>
+            </div>
           </div>
         </form>
       </div>

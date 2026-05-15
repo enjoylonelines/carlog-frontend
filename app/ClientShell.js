@@ -1,33 +1,42 @@
 'use client';
 import { useContext, useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Navbar from './components/Navbar/Navbar';
 import BottomNav from './components/BottomNav/BottomNav';
 import CreatePost from './components/CreatePost/CreatePost';
 import AuthContextProvider, { AuthContext } from '@/contexts/AuthContext';
 import TokenExpirationWarning from "@/components/TokenExpirationWarning/TokenExpirationWarning";
+import LoginModal from "@/components/LoginModal/LoginModal";
 import { markFeedStale } from './utils/feedRefresh';
 import NotificationContextProvider from '@/contexts/NotificationContext';
 import styles from './ClientShell.module.css';
 
-const PUBLIC_PATHS = ['/login'];
+const PUBLIC_PATHS = ['/'];
 
 function RouteGuard({ children }) {
-  const { user } = useContext(AuthContext);
+  const { user, showLoginModal, setShowLoginModal } = useContext(AuthContext);
   const pathname = usePathname();
-  const router = useRouter();
 
   const isPublic = PUBLIC_PATHS.includes(pathname);
 
   useEffect(() => {
     if (!user && !isPublic) {
-      router.replace('/login');
+      setShowLoginModal(true);
     }
-  }, [user, isPublic, router]);
+  }, [user, isPublic, setShowLoginModal]);
 
-  if (!user && !isPublic) return null;
-
-  return children;
+  return (
+    <>
+      <LoginModal showLoginModal={showLoginModal} setShowLoginModal={setShowLoginModal} />
+      {(!user && !isPublic) ? (
+        <div style={{ opacity: 0.5, pointerEvents: 'none' }}>
+          {children}
+        </div>
+      ) : (
+        children
+      )}
+    </>
+  );
 }
 
 function Shell({ children }) {

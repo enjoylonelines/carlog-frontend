@@ -15,7 +15,7 @@ instance.interceptors.request.use((config) => {
   return config;
 });
 
-// 401 응답 인터셉터: 토큰 만료 시 강제 로그아웃 후 로그인 페이지로 이동
+// 401 응답 인터셉터: 토큰 만료 시 강제 로그아웃 후 홈으로 이동
 instance.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -23,7 +23,7 @@ instance.interceptors.response.use(
       localStorage.removeItem("user");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("userId");
-      window.location.href = "/login";
+      window.location.href = "/";
     }
     return Promise.reject(error);
   }
