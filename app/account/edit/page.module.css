@@ -149,13 +149,42 @@
 
 .btnGroup {
   display: flex;
-  flex-direction: column;
   gap: 10px;
   margin-top: 8px;
+  align-items: center;
+}
+
+.btnDelete {
+  width: 100%;
+  height: 46px;
+  border-radius: 10px;
+  border: none;
+  background: #ff9800;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btnDelete:hover:not(:disabled) {
+  background: #f57c00;
+}
+
+.btnDelete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnGroupRight {
+  display: flex;
+  gap: 10px;
+  flex: 1;
 }
 
 .btnPrimary {
-  width: 100%;
+  flex: 1;
   height: 46px;
   border-radius: 10px;
   border: none;
@@ -177,7 +206,7 @@
 }
 
 .btnCancel {
-  width: 100%;
+  flex: 1;
   height: 46px;
   border-radius: 10px;
   border: 1.5px solid var(--color-border);

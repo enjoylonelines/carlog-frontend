@@ -23,7 +23,7 @@ function AxiosConfig() {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('userId');
           removeAuthHeader();
-          window.location.replace('/login');
+          window.location.replace('/');
         }
         return Promise.reject(error);
       },
