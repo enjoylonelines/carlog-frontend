@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import authApi from "@/api/authApi";
 import { checkLoginIdAvailable, checkEmailAvailable } from "@/api/user";
@@ -29,6 +29,21 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // 뒤로가기 이벤트 처리
+  useEffect(() => {
+    const handlePopState = () => {
+      if (showLoginModal) {
+        setShowLoginModal(false);
+        // 뒤로가기를 자연스럽게 진행 (이전 페이지로 이동)
+      }
+    };
+
+    if (showLoginModal) {
+      window.addEventListener("popstate", handlePopState);
+      return () => window.removeEventListener("popstate", handlePopState);
+    }
+  }, [showLoginModal, setShowLoginModal]);
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();

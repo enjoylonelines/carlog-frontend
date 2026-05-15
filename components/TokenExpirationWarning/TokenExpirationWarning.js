@@ -15,6 +15,21 @@ export default function TokenExpirationWarning() {
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
+  // 뒤로가기 이벤트 처리
+  useEffect(() => {
+    const handlePopState = () => {
+      if (showExpiryWarning) {
+        setShowExpiryWarning(false);
+        // 뒤로가기를 자연스럽게 진행 (이전 페이지로 이동)
+      }
+    };
+
+    if (showExpiryWarning) {
+      window.addEventListener("popstate", handlePopState);
+      return () => window.removeEventListener("popstate", handlePopState);
+    }
+  }, [showExpiryWarning, setShowExpiryWarning]);
+
   // 남은 시간 카운트다운
   useEffect(() => {
     if (!showExpiryWarning || !tokenExpiresAt) return;
