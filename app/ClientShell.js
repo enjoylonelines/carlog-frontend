@@ -9,7 +9,7 @@ import { markFeedStale } from './utils/feedRefresh';
 import NotificationContextProvider from '@/contexts/NotificationContext';
 import styles from './ClientShell.module.css';
 
-const PUBLIC_PATHS = ['/login'];
+const PUBLIC_PATHS = ['/', '/login'];
 
 function RouteGuard({ children }) {
   const { user } = useContext(AuthContext);
