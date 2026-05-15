@@ -2,7 +2,10 @@ import axios from 'axios';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const instance = axios.create({ baseURL: BASE_URL });
+const instance = axios.create({
+  baseURL: BASE_URL,
+  headers: { 'ngrok-skip-browser-warning': 'true' },
+});
 
 instance.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
