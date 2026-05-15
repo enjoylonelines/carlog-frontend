@@ -26,14 +26,20 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
   const router = useRouter();
   const isEdit = !!initialPost;
 
+  const initialMediaUrls = initialPost?.mediaUrls?.length
+    ? initialPost.mediaUrls
+    : initialPost?.imageUrl
+      ? [initialPost.imageUrl]
+      : [];
+
   const [content, setContent] = useState(initialPost?.content ?? '');
-  const [selectedTags, setSelectedTags] = useState(initialPost?.hashtags ?? []);
+  const [selectedTags, setSelectedTags] = useState(initialPost?.hashtags ?? initialPost?.tags ?? []);
   const [hashtags, setHashtags] = useState([]);
-  const [preview, setPreview] = useState(initialPost?.imageUrl ?? null);
-  const [mediaFiles, setMediaFiles] = useState([]);
+  const [selectedMedia, setSelectedMedia] = useState([]);
   const [tagInput, setTagInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef(null);
+  const selectedMediaRef = useRef([]);
 
   useEffect(() => {
     getHashtags().then((data) => {
@@ -41,13 +47,43 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
     });
   }, []);
 
+  useEffect(() => {
+    selectedMediaRef.current = selectedMedia;
+  }, [selectedMedia]);
+
+  useEffect(() => {
+    return () => {
+      selectedMediaRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+    };
+  }, []);
+
   const tagOptions = hashtags.length > 0 ? hashtags.map((h) => h.tagName) : DEFAULT_TAGS;
+  const displayMediaUrls = selectedMedia.length > 0 ? selectedMedia.map((item) => item.previewUrl) : initialMediaUrls;
+  const isShowingSelectedMedia = selectedMedia.length > 0;
 
   const handleFile = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    setMediaFiles(files);
-    setPreview(URL.createObjectURL(files[0]));
+
+    setSelectedMedia((prev) => {
+      prev.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      return files.map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+      }));
+    });
+  };
+
+  const removeSelectedMedia = (index) => {
+    setSelectedMedia((prev) => {
+      const target = prev[index];
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+
+    if (fileRef.current) {
+      fileRef.current.value = '';
+    }
   };
 
   const toggleTag = (tag) => {
@@ -68,6 +104,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
 
     try {
       let savedBoard = null;
+      const mediaFiles = selectedMedia.map((item) => item.file);
 
       if (isEdit) {
         savedBoard = await updateBoard({
@@ -116,9 +153,47 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
         </div>
 
         <div className={styles.body}>
-          <button className={styles.imageArea} onClick={() => fileRef.current?.click()}>
-            {preview ? (
-              <img src={preview} alt="미리보기" className={styles.preview} />
+          <div
+            className={styles.imageArea}
+            role="button"
+            tabIndex={0}
+            onClick={() => fileRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileRef.current?.click();
+              }
+            }}
+          >
+            {displayMediaUrls.length > 0 ? (
+              <div className={styles.previewList}>
+                {displayMediaUrls.map((url, index) => (
+                  <div className={styles.previewItem} key={`${url}-${index}`}>
+                    <img src={url} alt={`미리보기 ${index + 1}`} className={styles.preview} />
+                    {isShowingSelectedMedia && (
+                      <span
+                        className={styles.removeMediaBtn}
+                        role="button"
+                        tabIndex={0}
+                        aria-label="이미지 선택 취소"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeSelectedMedia(index);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeSelectedMedia(index);
+                          }
+                        }}
+                      >
+                        ×
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className={styles.imagePlaceholder}>
                 <CameraIcon />
@@ -133,7 +208,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
               className={styles.fileInput}
               onChange={handleFile}
             />
-          </button>
+          </div>
 
           <div className={styles.textArea}>
             <textarea
@@ -187,6 +262,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
                   key={tag}
                   className={`${styles.chip} ${selectedTags.includes(tag) ? styles.chipActive : ''}`}
                   onClick={() => toggleTag(tag)}
+                  type="button"
                 >
                   #{tag}
                 </button>
