@@ -9,6 +9,8 @@ import { followCache } from '../../utils/followCache';
 import { likeCache } from '../../utils/likeCache';
 import { createLike, deleteLike } from '@/api/like';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
+const toAbsUrl = (url) => url && url.startsWith('/') ? `${API_BASE}${url}` : url;
 const isSrc = (url) => !!url && (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://'));
 
 function timeAgo(dateStr) {
@@ -171,7 +173,7 @@ export default function PostCard({ post }) {
         >
           {isSrc(profileImageUrl) && profileImageUrl !== avatarErrSrc ? (
             <img
-              src={profileImageUrl}
+              src={toAbsUrl(profileImageUrl)}
               alt={username}
               className={styles.avatarImg}
               onError={() => setAvatarErrSrc(profileImageUrl)}
@@ -214,7 +216,7 @@ export default function PostCard({ post }) {
               {images.map((url, index) => (
                 <div className={styles.imageWrap} key={`${url}-${index}`}>
                   <img
-                    src={isSrc(url) ? url : '/no-image.svg'}
+                    src={isSrc(url) ? toAbsUrl(url) : '/no-image.svg'}
                     alt={`${username} 게시물 이미지 ${index + 1}`}
                     className={styles.image}
                     loading="lazy"

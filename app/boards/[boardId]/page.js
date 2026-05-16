@@ -3,6 +3,8 @@ import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AuthContext } from '../../../contexts/AuthContext';
 import CreatePost from '../../components/CreatePost/CreatePost';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
+const toAbsUrl = (url) => url && url.startsWith('/') ? `${API_BASE}${url}` : url;
 import {
   getBoard,
   deleteBoard,
@@ -30,7 +32,7 @@ function Avatar({ userId, username, profileImageUrl, className }) {
   if (profileImageUrl && profileImageUrl !== errSrc) {
     return (
       <img
-        src={profileImageUrl}
+        src={toAbsUrl(profileImageUrl)}
         alt={username || ''}
         className={className}
         onError={() => setErrSrc(profileImageUrl)}

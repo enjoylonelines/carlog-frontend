@@ -3,6 +3,8 @@ import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { getUserProfile, searchBoards, increaseBoardHit } from '../../../api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
+const toAbsUrl = (url) => url && url.startsWith('/') ? `${API_BASE}${url}` : url;
 import { getLikedBoards } from '../../../api/like';
 import ProfileEditModal from '../ProfileEditModal/ProfileEditModal';
 import styles from './ProfileView.module.css';
@@ -181,7 +183,7 @@ return (
           </div>
           {isSrc(profile.profileImageUrl) && !profileImgErr ? (
             <img
-              src={profile.profileImageUrl}
+              src={toAbsUrl(profile.profileImageUrl)}
               alt="프로필"
               className={styles.avatarLg}
               onError={() => setProfileImgErr(true)}
