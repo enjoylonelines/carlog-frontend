@@ -22,20 +22,55 @@ export const deleteAllNotifications = async (receiverId) => {
 };
 
 export const subscribeNotifications = (receiverId, onNotification) => {
-  const url = `${process.env.NEXT_PUBLIC_API_URL}/api/notifications/stream?receiverId=${receiverId}`;
-  const es = new EventSource(url);
+  const base = process.env.NEXT_PUBLIC_API_URL;
+  const url = `${base}/api/notifications/stream?receiverId=${receiverId}`;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
-  es.addEventListener('notification', (e) => {
+  const headers = { 'ngrok-skip-browser-warning': 'true' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  let closed = false;
+  const controller = new AbortController();
+
+  (async () => {
     try {
-      onNotification(JSON.parse(e.data));
+      const res = await fetch(url, { headers, signal: controller.signal });
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (!closed) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        let eventName = '';
+        for (const line of lines) {
+          if (line.startsWith('event:')) {
+            eventName = line.slice(6).trim();
+          } else if (line.startsWith('data:')) {
+            const data = line.slice(5).trim();
+            if (eventName === 'notification') {
+              try {
+                onNotification(JSON.parse(data));
+              } catch {
+                /* 무시 */
+              }
+            }
+            eventName = '';
+          }
+        }
+      }
     } catch {
-      // 파싱 실패 무시
+      // 연결 종료 또는 오류 무시
     }
-  });
+  })();
 
-  es.onerror = () => {
-    es.close();
+  return {
+    close: () => {
+      closed = true;
+      controller.abort();
+    },
   };
-
-  return es;
 };
