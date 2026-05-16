@@ -8,6 +8,7 @@ import { avatarColor as getAvatarColor } from '../../utils/avatar';
 import { followCache } from '../../utils/followCache';
 import { likeCache } from '../../utils/likeCache';
 import { isMediaSrc, toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
+import { markBoardViewed } from '../../utils/feedRefresh';
 import { createLike, deleteLike } from '@/api/like';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -158,6 +159,7 @@ export default function PostCard({ post }) {
   const openBoard = async () => {
     try {
       await increaseBoardHit(boardId);
+      markBoardViewed(boardId);
     } finally {
       router.push(`/boards/${boardId}`);
     }
