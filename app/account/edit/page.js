@@ -142,7 +142,7 @@ export default function EditAccountPage() {
     setError('');
     setSubmitting(true);
     try {
-      const payload = { loginId, email, username: username.trim() || null, bio };
+      const payload = { loginId, email };
       if (newPassword) payload.newPassword = newPassword;
       await updateUserAccount(userId, payload);
       setSuccess('회원 정보가 성공적으로 수정되었습니다.');
