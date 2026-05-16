@@ -51,7 +51,7 @@
   padding: 0 36px 0 14px;
   border-radius: 8px;
   border: none;
-  background: #efefef;
+  background: #2a2a2a;
   font-size: 14px;
   color: var(--color-text);
   outline: none;
@@ -63,7 +63,7 @@
 }
 
 .searchInput:focus {
-  background: #e8e8e8;
+  background: #333333;
 }
 
 .searchIconBtn {
@@ -95,7 +95,7 @@
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   z-index: 200;
 }
@@ -115,7 +115,7 @@
 }
 
 .dropItem:hover {
-  background: #f5f5f5;
+  background: #252525;
 }
 
 .dropSection {
@@ -202,7 +202,7 @@
 }
 
 .iconBtn:hover {
-  background: #f0f0f0;
+  background: #2a2a2a;
   color: var(--color-primary);
 }
 

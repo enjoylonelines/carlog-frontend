@@ -17,8 +17,6 @@ export default function EditAccountPage() {
   // 폼 필드
   const [loginId, setLoginId] = useState('');
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
-  const [bio, setBio] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -33,7 +31,6 @@ export default function EditAccountPage() {
   // 필드별 에러 메시지
   const [loginIdError, setLoginIdError] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [usernameError, setUsernameError] = useState('');
   const [currentPasswordError, setCurrentPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
@@ -49,8 +46,6 @@ export default function EditAccountPage() {
       if (data) {
         setLoginId(data.loginId || '');
         setEmail(data.email || '');
-        setUsername(data.username || '');
-        setBio(data.bio || '');
         setOriginalLoginId(data.loginId || '');
         setOriginalEmail(data.email || '');
       }
@@ -154,7 +149,6 @@ export default function EditAccountPage() {
       setEmailStatus(null);
       setLoginIdError('');
       setEmailError('');
-      setUsernameError('');
     } catch (err) {
       setError(err?.serverMessage || '수정 중 오류가 발생했습니다. 다시 시도해 주세요.');
     } finally {
@@ -220,31 +214,6 @@ export default function EditAccountPage() {
             {emailStatus === 'ok' && <span className={styles.msgOk}>사용 가능한 이메일입니다.</span>}
             {emailStatus === 'dup' && <span className={styles.msgErr}>이미 사용 중인 이메일입니다.</span>}
             {!emailStatus && emailError && <span className={styles.msgErr}>{emailError}</span>}
-          </div>
-
-          {/* 닉네임 */}
-          <div className={styles.field}>
-            <label className={styles.label}>닉네임</label>
-            <input
-              className={styles.input}
-              type="text"
-              value={username}
-              onChange={(e) => { setUsername(e.target.value); setUsernameError(''); }}
-              placeholder={loginId || String(userId)}
-            />
-            {usernameError && <span className={styles.msgErr}>{usernameError}</span>}
-          </div>
-
-          {/* 소개 */}
-          <div className={styles.field}>
-            <label className={styles.label}>소개</label>
-            <textarea
-              className={styles.textarea}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={3}
-              placeholder="자기소개를 입력하세요"
-            />
           </div>
 
           {/* 비밀번호 변경 (선택) */}

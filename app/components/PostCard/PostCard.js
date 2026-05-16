@@ -7,11 +7,11 @@ import { checkFollow, followUser, unfollowUser, increaseBoardHit } from '../../.
 import { avatarColor as getAvatarColor } from '../../utils/avatar';
 import { followCache } from '../../utils/followCache';
 import { likeCache } from '../../utils/likeCache';
+import { isMediaSrc, toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
 import { createLike, deleteLike } from '@/api/like';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 const toAbsUrl = (url) => url && url.startsWith('/') ? `${API_BASE}${url}` : url;
-const isSrc = (url) => !!url && (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://'));
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
@@ -42,11 +42,13 @@ export default function PostCard({ post }) {
     tags,
     imageUrl,
     mediaUrls,
+    mediaBackupUrls,
     commentCount,
     isLike,
     likeCount,
   } = post;
   const images = mediaUrls?.length ? mediaUrls : imageUrl ? [imageUrl] : [];
+  const backupImages = mediaBackupUrls || [];
   const color = avatarColor || getAvatarColor(userId);
   const isLong = content && content.length > 80;
   const isOwnPost = userId === MY_USER_ID;
@@ -171,7 +173,7 @@ export default function PostCard({ post }) {
           tabIndex={0}
           onKeyDown={(e) => e.key === 'Enter' && router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
         >
-          {isSrc(profileImageUrl) && profileImageUrl !== avatarErrSrc ? (
+          {isMediaSrc(profileImageUrl) && profileImageUrl !== avatarErrSrc ? (
             <img
               src={toAbsUrl(profileImageUrl)}
               alt={username}
@@ -216,12 +218,12 @@ export default function PostCard({ post }) {
               {images.map((url, index) => (
                 <div className={styles.imageWrap} key={`${url}-${index}`}>
                   <img
-                    src={isSrc(url) ? toAbsUrl(url) : '/no-image.svg'}
+                    src={isMediaSrc(url) ? toMediaSrc(url) : '/no-image.svg'}
                     alt={`${username} 게시물 이미지 ${index + 1}`}
                     className={styles.image}
                     loading="lazy"
                     onError={(e) => {
-                      e.currentTarget.src = '/no-image.svg';
+                      useBackupImageOnError(e, backupImages[index]);
                     }}
                   />
                 </div>
