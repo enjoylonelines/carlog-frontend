@@ -11,7 +11,7 @@
   top: 0;
   z-index: 50;
   height: 54px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(20, 20, 20, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--color-border);
@@ -36,7 +36,7 @@
 }
 
 .backBtn:hover {
-  background: #f0f0f0;
+  background: #2a2a2a;
 }
 
 .topTitle {
@@ -71,12 +71,12 @@
 }
 
 .actionBtn:hover {
-  background: #f0f0f0;
+  background: #2a2a2a;
   color: var(--color-text);
 }
 
 .deleteBtn:hover {
-  background: #fff0f0;
+  background: #2a1a1a;
   color: var(--color-primary);
 }
 
@@ -142,13 +142,13 @@
 }
 
 .followBtn.following {
-  background: white;
+  background: #2a2a2a;
   border-color: var(--color-border);
   color: var(--color-text-secondary);
 }
 
 .followBtn.following:hover {
-  background: #f5f5f5;
+  background: #333333;
 }
 
 /* 이미지 */
@@ -211,7 +211,7 @@
   width: 100%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: #f0f0f0;
+  background: #1a1a1a;
   position: relative;
   scroll-snap-align: center;
   scroll-snap-stop: always;
@@ -269,7 +269,7 @@
 
 /* 댓글 섹션 */
 .commentSection {
-  border-top: 6px solid #f0f0f0;
+  border-top: 6px solid #1e1e1e;
   padding: 0 0 8px;
 }
 
@@ -397,7 +397,7 @@
 
 .repliesList {
   padding-left: 54px;
-  border-left: 2px solid #f0f0f0;
+  border-left: 2px solid #2e2e2e;
   margin: 0 16px 4px;
 }
 
@@ -452,7 +452,7 @@
   left: 0;
   right: 0;
   z-index: 60;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(20, 20, 20, 0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--color-border);
@@ -510,8 +510,8 @@
   justify-content: center;
   border: none;
   cursor: not-allowed;
-  background: #ebebeb;
-  color: #ababab;
+  background: #2a2a2a;
+  color: #555555;
   flex-shrink: 0;
   transition: all 0.15s;
 }
