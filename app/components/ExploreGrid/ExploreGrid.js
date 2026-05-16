@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import HashtagBar from '../HashtagBar/HashtagBar';
 import { getHashtags, getExploreBoards, increaseBoardHit } from '../../../api';
 import { useScrollRestore } from '../../hooks/useScrollRestore';
+import { toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
 import styles from './ExploreGrid.module.css';
 
 // 모듈 레벨 캐시
@@ -129,6 +130,7 @@ export default function ExploreGrid() {
         <div className={styles.grid}>
           {displayed.map((board) => {
             const imageUrl = board.mediaUrls?.[0] || '/no-image.svg';
+            const backupImageUrl = board.mediaBackupUrls?.[0];
             const tag = board.hashtags?.[0];
             return (
               <button
@@ -137,12 +139,12 @@ export default function ExploreGrid() {
                 onClick={() => openBoard(board.boardId)}
               >
                 <img
-                  src={imageUrl}
+                  src={toMediaSrc(imageUrl)}
                   alt={tag ? `#${tag}` : '게시물'}
                   className={styles.img}
                   loading="lazy"
                   onError={(e) => {
-                    e.currentTarget.src = '/no-image.svg';
+                    useBackupImageOnError(e, backupImageUrl);
                   }}
                 />
                 <div className={styles.overlay}>
