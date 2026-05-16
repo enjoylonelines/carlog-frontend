@@ -26,7 +26,7 @@ function timeAgo(dateStr) {
 
 export default function PostCard({ post }) {
   const router = useRouter();
-  const { userId: MY_USER_ID } = useContext(AuthContext);
+  const { userId: MY_USER_ID, setShowLoginModal, setRedirectUrl } = useContext(AuthContext);
   const [expanded, setExpanded] = useState(false);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const mediaListRef = useRef(null);
@@ -157,10 +157,29 @@ export default function PostCard({ post }) {
   };
 
   const openBoard = async () => {
+    if (!MY_USER_ID) {
+      setRedirectUrl(`/boards/${boardId}`);
+      setShowLoginModal(true);
+      return;
+    }
     try {
       await increaseBoardHit(boardId);
       markBoardViewed(boardId);
     } finally {
+      router.push(`/boards/${boardId}`);
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+  };
+
+  const goToBoard = async () => {
+    try {
+      await increaseBoardHit(boardId);
+      markBoardViewed(boardId);
+    } finally {
+      closeModal();
       router.push(`/boards/${boardId}`);
     }
   };
