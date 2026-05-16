@@ -17,18 +17,18 @@
 
 ## 디자인 시스템 (globals.css CSS 변수)
 
-| 변수 | 값 | 용도 |
-|------|-----|------|
-| `--color-primary` | `#E03131` | 레드 포인트 컬러 (sparse use) |
-| `--color-primary-hover` | `#C92A2A` | hover 상태 |
-| `--color-primary-subtle` | `#FFF5F5` | 연한 레드 배경 |
-| `--color-bg` | `#FAFAFA` | 페이지 배경 |
-| `--color-card` | `#FFFFFF` | 카드 배경 |
-| `--color-text` | `#1A1A1A` | 기본 텍스트 |
-| `--color-text-secondary` | `#737373` | 보조 텍스트 |
-| `--color-border` | `#DBDBDB` | 구분선 |
-| `--navbar-height` | `60px` | 네비바 높이 |
-| `--content-max-width` | `600px` | 피드 최대 너비 |
+| 변수                     | 값        | 용도                          |
+| ------------------------ | --------- | ----------------------------- |
+| `--color-primary`        | `#E03131` | 레드 포인트 컬러 (sparse use) |
+| `--color-primary-hover`  | `#C92A2A` | hover 상태                    |
+| `--color-primary-subtle` | `#FFF5F5` | 연한 레드 배경                |
+| `--color-bg`             | `#FAFAFA` | 페이지 배경                   |
+| `--color-card`           | `#FFFFFF` | 카드 배경                     |
+| `--color-text`           | `#1A1A1A` | 기본 텍스트                   |
+| `--color-text-secondary` | `#737373` | 보조 텍스트                   |
+| `--color-border`         | `#DBDBDB` | 구분선                        |
+| `--navbar-height`        | `60px`    | 네비바 높이                   |
+| `--content-max-width`    | `600px`   | 피드 최대 너비                |
 
 ## 컴포넌트 구조
 
@@ -46,11 +46,11 @@ app/
 
 ## API 함수 (`app/lib/api.js`)
 
-| 함수 | 엔드포인트 | 설명 |
-|------|-----------|------|
-| `getHashtags(name?)` | `GET /api/hashtags` | 해시태그 목록/검색 |
-| `searchBoards({tag, keyword})` | `GET /api/boards/search` | 게시물 검색 |
-| `searchUsers(keyword)` | `GET /api/users/search` | 사용자 검색 |
+| 함수                           | 엔드포인트               | 설명               |
+| ------------------------------ | ------------------------ | ------------------ |
+| `getHashtags(name?)`           | `GET /api/hashtags`      | 해시태그 목록/검색 |
+| `searchBoards({tag, keyword})` | `GET /api/boards/search` | 게시물 검색        |
+| `searchUsers(keyword)`         | `GET /api/users/search`  | 사용자 검색        |
 
 환경변수: `NEXT_PUBLIC_API_URL=http://localhost:80` (.env.local)
 
@@ -88,6 +88,7 @@ CARLOG.COMMENTS, CARLOG.FOLLOWS, CARLOG.HASHTAGS, CARLOG.HASHTAG_MAP, CARLOG.BLO
 `useEffect` 본문에서 `setState`를 **직접(동기)** 호출하지 않는다. ESLint 에러 발생 + 불필요한 cascading render 유발.
 
 **금지 패턴:**
+
 ```js
 useEffect(() => {
   setHidden(false); // ❌ effect 본문에서 직접 setState
@@ -95,6 +96,7 @@ useEffect(() => {
 ```
 
 **대신: 이전 값을 state에 함께 저장해 render 중 비교 (React 공식 권장)**
+
 ```js
 // ref.current를 render 중에 읽는 것도 금지 → state로 prevDep 관리
 const [{ prevDep, value }, setState] = useState({ prevDep: dep, value: false });

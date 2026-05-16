@@ -1,32 +1,89 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useContext, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import styles from './Navbar.module.css';
-import { searchUsers } from '../../lib/api';
-
-const AVATAR_COLORS = ['#4ECDC4', '#45B7D1', '#96CEB4', '#6C5CE7', '#FD9644', '#DDA0DD'];
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
+const toAbsUrl = (url) => url && url.startsWith('/') ? `${API_BASE}${url}` : url;
+import { searchUsers, getHashtags } from '../../../api';
+import { avatarColor } from '../../utils/avatar';
+import { NotificationContext } from '../../../contexts/NotificationContext';
+import { AuthContext } from '../../../contexts/AuthContext';
+import { getUserProfile } from '../../../api/user';
 
 export default function Navbar() {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
-  const [showDrop, setShowDrop] = useState(false);
+  const router = useRouter();
+  const { unreadCount } = useContext(NotificationContext);
+  const { userId, setShowLoginModal, setRedirectUrl } = useContext(AuthContext);
+  const [profileImageUrl, setProfileImageUrl] = useState(null);
+  const [username, setUsername] = useState('');
+  const [imgError, setImgError] = useState(false);
 
-  const handleSearch = async (e) => {
+  useEffect(() => {
+    if (!userId) return;
+    setImgError(false);
+    getUserProfile(userId).then((data) => {
+      if (data) {
+        setProfileImageUrl(data.profileImageUrl ?? null);
+        setUsername(data.username ?? '');
+      }
+    });
+  }, [userId]);
+  const [query, setQuery] = useState('');
+  const [users, setUsers] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [showDrop, setShowDrop] = useState(false);
+  const debounceRef = useRef(null);
+
+  const handleChange = (e) => {
     const val = e.target.value;
     setQuery(val);
-    if (val.trim().length >= 2) {
-      const data = await searchUsers(val.trim());
-      setResults(Array.isArray(data) ? data : []);
-      setShowDrop(true);
+    clearTimeout(debounceRef.current);
+    if (val.trim().length >= 1) {
+      debounceRef.current = setTimeout(async () => {
+        const [usersData, tagsData] = await Promise.all([searchUsers(val.trim()), getHashtags(val.trim())]);
+        setUsers(Array.isArray(usersData) ? usersData : []);
+        setTags(Array.isArray(tagsData) ? tagsData.slice(0, 5) : []);
+        setShowDrop(true);
+      }, 300);
     } else {
       setShowDrop(false);
     }
   };
 
+  const goSearch = () => {
+    if (!query.trim()) return;
+    setShowDrop(false);
+    router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') goSearch();
+  };
+
+  const handleProfileClick = (e) => {
+    if (!userId) {
+      e.preventDefault();
+      setRedirectUrl('/profile');
+      setShowLoginModal(true);
+    }
+  };
+
+  const hasResults = users.length > 0 || tags.length > 0;
+
   return (
     <nav className={styles.navbar}>
       <div className={styles.inner}>
-        <a href="/" className={styles.logo}>
+        <a
+          href="/"
+          className={styles.logo}
+          onClick={(e) => {
+            if (window.location.pathname === '/') {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+        >
           <span className={styles.logoDot} />
           CARLOG
         </a>
@@ -35,47 +92,104 @@ export default function Navbar() {
           <input
             className={styles.searchInput}
             type="text"
-            placeholder="해시태그, 닉네임으로 검색"
+            placeholder="사람, 태그, 게시물 검색 후 Enter"
             value={query}
-            onChange={handleSearch}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
             onBlur={() => setTimeout(() => setShowDrop(false), 200)}
           />
-          <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
-          {showDrop && results.length > 0 && (
+          <button className={styles.searchIconBtn} onClick={goSearch} tabIndex={-1} aria-label="검색">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+          </button>
+
+          {showDrop && hasResults && (
             <div className={styles.dropdown}>
-              {results.map((user, i) => (
-                <Link key={user.userId || i} href={`/users/${user.userId}`} className={styles.dropItem}>
-                  <div
-                    className={styles.dropAvatar}
-                    style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}
-                  >
-                    {(user.username || 'U')[0].toUpperCase()}
-                  </div>
-                  <div className={styles.dropInfo}>
-                    <span className={styles.dropName}>{user.username}</span>
-                    {user.bio && <span className={styles.dropBio}>{user.bio}</span>}
-                  </div>
-                </Link>
-              ))}
+              {users.length > 0 && (
+                <>
+                  <div className={styles.dropSection}>사람</div>
+                  {users.map((user, i) => (
+                    <button
+                      key={user.userId || i}
+                      className={styles.dropItem}
+                      onClick={() => {
+                        setShowDrop(false);
+                        setQuery('');
+                        router.push(`/users/${user.userId}`);
+                      }}
+                    >
+                      <div className={styles.dropAvatar} style={{ background: avatarColor(user.userId) }}>
+                        {(user.username || 'U')[0].toUpperCase()}
+                      </div>
+                      <div className={styles.dropInfo}>
+                        <span className={styles.dropName}>{user.username}</span>
+                        {user.bio && <span className={styles.dropBio}>{user.bio}</span>}
+                      </div>
+                    </button>
+                  ))}
+                </>
+              )}
+
+              {tags.length > 0 && (
+                <>
+                  <div className={styles.dropSection}>태그</div>
+                  {tags.map((tag) => (
+                    <button
+                      key={tag.hashtagId ?? tag.tagName}
+                      className={styles.dropItem}
+                      onClick={() => {
+                        setShowDrop(false);
+                        setQuery('');
+                        router.push(`/explore?tag=${encodeURIComponent(tag.tagName)}`);
+                      }}
+                    >
+                      <div className={styles.dropTagIcon}>#</div>
+                      <span className={styles.dropName}>#{tag.tagName}</span>
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
           )}
         </div>
 
         <div className={styles.actions}>
           <Link href="/notifications" className={styles.iconBtn} title="알림">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
+            <span className={styles.bellWrap}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                width="22"
+                height="22"
+              >
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {unreadCount > 0 && <span className={styles.badge}>{unreadCount > 99 ? '99+' : unreadCount}</span>}
+            </span>
           </Link>
-          <Link href="/profile" className={styles.iconBtn} title="프로필">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+          <Link href="/profile" className={styles.profileBtn} title="프로필" onClick={handleProfileClick}>
+            {profileImageUrl && !imgError ? (
+              <img
+                src={toAbsUrl(profileImageUrl)}
+                alt={username}
+                className={styles.profileImg}
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <div
+                className={styles.profileFallback}
+                style={{ background: avatarColor(userId) }}
+              >
+                {username ? username[0].toUpperCase() : '?'}
+              </div>
+            )}
           </Link>
         </div>
       </div>

@@ -1,29 +1,45 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import boardApi from '@/apis/boardApi';
-import { getHashtags } from '../../lib/api';
+import { useRouter } from 'next/navigation';
+import { getHashtags, createBoard, updateBoard } from '../../../api';
 import styles from './CreatePost.module.css';
 
 const DEFAULT_TAGS = ['드라이브', '튜닝', '연비', '차박', '정비', 'BMW', '현대', '포르쉐'];
 
 const CameraIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-    <circle cx="12" cy="13" r="4"/>
+  <svg
+    width="28"
+    height="28"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+  >
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
   </svg>
 );
 
 export default function CreatePost({ onClose, initialPost, onSaved }) {
+  const router = useRouter();
   const isEdit = !!initialPost;
 
+  const initialMediaUrls = initialPost?.mediaUrls?.length
+    ? initialPost.mediaUrls
+    : initialPost?.imageUrl
+      ? [initialPost.imageUrl]
+      : [];
+
   const [content, setContent] = useState(initialPost?.content ?? '');
-  const [selectedTags, setSelectedTags] = useState(initialPost?.hashtags ?? []);
+  const [selectedTags, setSelectedTags] = useState(initialPost?.hashtags ?? initialPost?.tags ?? []);
   const [hashtags, setHashtags] = useState([]);
-  const [preview, setPreview] = useState(initialPost?.imageUrl ?? null);
-  const [mediaFiles, setMediaFiles] = useState([]);
+  const [selectedMedia, setSelectedMedia] = useState([]);
   const [tagInput, setTagInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef(null);
+  const selectedMediaRef = useRef([]);
 
   useEffect(() => {
     getHashtags().then((data) => {
@@ -31,28 +47,54 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
     });
   }, []);
 
+  useEffect(() => {
+    selectedMediaRef.current = selectedMedia;
+  }, [selectedMedia]);
+
+  useEffect(() => {
+    return () => {
+      selectedMediaRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+    };
+  }, []);
+
   const tagOptions = hashtags.length > 0 ? hashtags.map((h) => h.tagName) : DEFAULT_TAGS;
+  const displayMediaUrls = selectedMedia.length > 0 ? selectedMedia.map((item) => item.previewUrl) : initialMediaUrls;
+  const isShowingSelectedMedia = selectedMedia.length > 0;
 
   const handleFile = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    setMediaFiles(files);
-    setPreview(URL.createObjectURL(files[0]));
+
+    setSelectedMedia((prev) => {
+      prev.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      return files.map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+      }));
+    });
+  };
+
+  const removeSelectedMedia = (index) => {
+    setSelectedMedia((prev) => {
+      const target = prev[index];
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+
+    if (fileRef.current) {
+      fileRef.current.value = '';
+    }
   };
 
   const toggleTag = (tag) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   };
 
   const addCustomTag = () => {
     const tag = tagInput.trim().replace(/^#+/, '');
     if (!tag) return;
 
-    setSelectedTags((prev) => (
-      prev.includes(tag) ? prev : [...prev, tag]
-    ));
+    setSelectedTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
     setTagInput('');
   };
 
@@ -61,25 +103,29 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
     setSubmitting(true);
 
     try {
+      let savedBoard = null;
+      const mediaFiles = selectedMedia.map((item) => item.file);
+
       if (isEdit) {
-        const formData = new FormData();
-        formData.append('boardId', initialPost.boardId);
-        formData.append('content', content);
-        selectedTags.forEach((tag) => formData.append('hashtags', tag));
-        mediaFiles.forEach((file) => formData.append('mediaFiles', file));
-
-        await boardApi.boardUpdate(formData);
+        savedBoard = await updateBoard({
+          boardId: initialPost.boardId,
+          content,
+          hashtags: selectedTags,
+          mediaFiles,
+        });
       } else {
-        const formData = new FormData();
-        formData.append('content', content);
-        selectedTags.forEach((tag) => formData.append('hashtags', tag));
-        mediaFiles.forEach((file) => formData.append('mediaFiles', file));
-
-        await boardApi.boardWrite(formData);
+        savedBoard = await createBoard({
+          content,
+          hashtags: selectedTags,
+          mediaFiles,
+        });
       }
 
-      onSaved?.();
+      onSaved?.(savedBoard);
       onClose();
+      if (!isEdit && savedBoard?.boardId) {
+        router.push(`/boards/${savedBoard.boardId}`);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -93,21 +139,61 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
         <div className={styles.handle} />
 
         <div className={styles.header}>
-          <button className={styles.cancelBtn} onClick={onClose}>취소</button>
+          <button className={styles.cancelBtn} onClick={onClose}>
+            취소
+          </button>
           <h2 className={styles.title}>{isEdit ? '게시물 수정' : '새 게시물'}</h2>
           <button
             className={`${styles.postBtn} ${canPost ? styles.postBtnActive : ''}`}
             onClick={handleSubmit}
             disabled={!canPost || submitting}
           >
-            {submitting ? (isEdit ? '저장 중' : '게시 중') : (isEdit ? '저장' : '게시')}
+            {submitting ? (isEdit ? '저장 중' : '게시 중') : isEdit ? '저장' : '게시'}
           </button>
         </div>
 
         <div className={styles.body}>
-          <button className={styles.imageArea} onClick={() => fileRef.current?.click()}>
-            {preview ? (
-              <img src={preview} alt="미리보기" className={styles.preview} />
+          <div
+            className={styles.imageArea}
+            role="button"
+            tabIndex={0}
+            onClick={() => fileRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileRef.current?.click();
+              }
+            }}
+          >
+            {displayMediaUrls.length > 0 ? (
+              <div className={styles.previewList}>
+                {displayMediaUrls.map((url, index) => (
+                  <div className={styles.previewItem} key={`${url}-${index}`}>
+                    <img src={url} alt={`미리보기 ${index + 1}`} className={styles.preview} />
+                    {isShowingSelectedMedia && (
+                      <span
+                        className={styles.removeMediaBtn}
+                        role="button"
+                        tabIndex={0}
+                        aria-label="이미지 선택 취소"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeSelectedMedia(index);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeSelectedMedia(index);
+                          }
+                        }}
+                      >
+                        ×
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className={styles.imagePlaceholder}>
                 <CameraIcon />
@@ -122,7 +208,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
               className={styles.fileInput}
               onChange={handleFile}
             />
-          </button>
+          </div>
 
           <div className={styles.textArea}>
             <textarea
@@ -134,9 +220,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
               autoFocus
             />
             <div className={styles.charCount}>
-              <span style={{ color: content.length > 450 ? '#E03131' : undefined }}>
-                {content.length}
-              </span>
+              <span style={{ color: content.length > 450 ? '#E03131' : undefined }}>{content.length}</span>
               {' / 500'}
             </div>
           </div>
@@ -152,7 +236,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                     e.preventDefault();
                     addCustomTag();
                   }
@@ -165,12 +249,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
             {selectedTags.length > 0 && (
               <div className={styles.selectedTags}>
                 {selectedTags.map((tag) => (
-                  <button
-                    key={tag}
-                    className={styles.selectedTag}
-                    onClick={() => toggleTag(tag)}
-                    type="button"
-                  >
+                  <button key={tag} className={styles.selectedTag} onClick={() => toggleTag(tag)} type="button">
                     #{tag}
                     <span aria-hidden="true">×</span>
                   </button>
@@ -183,6 +262,7 @@ export default function CreatePost({ onClose, initialPost, onSaved }) {
                   key={tag}
                   className={`${styles.chip} ${selectedTags.includes(tag) ? styles.chipActive : ''}`}
                   onClick={() => toggleTag(tag)}
+                  type="button"
                 >
                   #{tag}
                 </button>

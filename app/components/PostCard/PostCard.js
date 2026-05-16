@@ -1,7 +1,17 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './PostCard.module.css';
+import { AuthContext } from '../../../contexts/AuthContext';
+import { checkFollow, followUser, unfollowUser, increaseBoardHit } from '../../../api';
+import { avatarColor as getAvatarColor } from '../../utils/avatar';
+import { followCache } from '../../utils/followCache';
+import { likeCache } from '../../utils/likeCache';
+import { isMediaSrc, toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
+import { createLike, deleteLike } from '@/api/like';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
+const toAbsUrl = (url) => url && url.startsWith('/') ? `${API_BASE}${url}` : url;
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
@@ -13,91 +23,322 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('ko-KR');
 }
 
-const AVATAR_COLORS = ['#E03131', '#45B7D1', '#6C5CE7', '#96CEB4', '#FD9644', '#2196F3', '#FF9800'];
-const colorFromId = (id) => AVATAR_COLORS[(id || 0) % AVATAR_COLORS.length];
-
 export default function PostCard({ post }) {
   const router = useRouter();
+  const { userId: MY_USER_ID } = useContext(AuthContext);
   const [expanded, setExpanded] = useState(false);
-  const [following, setFollowing] = useState(false);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const mediaListRef = useRef(null);
 
-  const { boardId, userId, username, avatarColor, content, hitcount, createdAt, tags, imageUrl, commentCount } = post;
-  const color = avatarColor || colorFromId(userId);
+  const {
+    boardId,
+    userId,
+    username,
+    avatarColor,
+    profileImageUrl,
+    content,
+    hitcount,
+    createdAt,
+    tags,
+    imageUrl,
+    mediaUrls,
+    mediaBackupUrls,
+    commentCount,
+    isLike,
+    likeCount,
+  } = post;
+  const images = mediaUrls?.length ? mediaUrls : imageUrl ? [imageUrl] : [];
+  const backupImages = mediaBackupUrls || [];
+  const color = avatarColor || getAvatarColor(userId);
   const isLong = content && content.length > 80;
+  const isOwnPost = userId === MY_USER_ID;
+
+  const [avatarErrSrc, setAvatarErrSrc] = useState(null);
+
+  // null = 로딩 중, true/false = 확정
+  const [following, setFollowing] = useState(() => followCache[userId] ?? null);
+
+  // 좋아요 — prop 변경 감지 + likeCache 우선 적용
+  const [{ prevIsLike, prevLikeCount, liked, likes }, setLikeState] = useState(() => {
+    const cached = likeCache[boardId];
+    return {
+      prevIsLike: isLike ?? 0,
+      prevLikeCount: likeCount ?? 0,
+      liked: cached ? cached.liked : (isLike ?? 0) === 1,
+      likes: cached ? cached.likes : likeCount ?? 0,
+    };
+  });
+
+  if ((isLike ?? 0) !== prevIsLike || (likeCount ?? 0) !== prevLikeCount) {
+    const cached = likeCache[boardId];
+    setLikeState({
+      prevIsLike: isLike ?? 0,
+      prevLikeCount: likeCount ?? 0,
+      liked: cached ? cached.liked : (isLike ?? 0) === 1,
+      likes: cached ? cached.likes : likeCount ?? 0,
+    });
+  }
+
+  const likePendingRef = useRef(false);
+
+  useEffect(() => {
+    if (!MY_USER_ID) return;
+    if (isOwnPost) return;
+    if (followCache[userId] !== undefined) return;
+    let cancelled = false;
+    checkFollow({ userId: MY_USER_ID, targetId: userId }).then((isFollowing) => {
+      if (!cancelled) {
+        followCache[userId] = isFollowing;
+        setFollowing(isFollowing);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [MY_USER_ID, userId, isOwnPost]);
+
+  const handleFollow = async () => {
+    if (!MY_USER_ID) return;
+    const next = !following;
+    setFollowing(next);
+    followCache[userId] = next;
+    if (next) {
+      await followUser({ userId: MY_USER_ID, targetId: userId });
+    } else {
+      await unfollowUser({ userId: MY_USER_ID, targetId: userId });
+    }
+  };
+
+  const handleMediaScroll = () => {
+    const list = mediaListRef.current;
+    if (!list) return;
+    const nextIndex = Math.round(list.scrollLeft / list.clientWidth);
+    setCurrentMediaIndex(Math.min(Math.max(nextIndex, 0), images.length - 1));
+  };
+
+  const moveMedia = (event, direction) => {
+    event.stopPropagation();
+    const list = mediaListRef.current;
+    if (!list) return;
+    const nextIndex = Math.min(Math.max(currentMediaIndex + direction, 0), images.length - 1);
+    list.scrollTo({
+      left: nextIndex * list.clientWidth,
+      behavior: 'smooth',
+    });
+    setCurrentMediaIndex(nextIndex);
+  };
+
+  const handleLike = async (e) => {
+    e.stopPropagation();
+    if (!MY_USER_ID) return;
+    if (likePendingRef.current) return;
+    likePendingRef.current = true;
+
+    const nextLiked = !liked;
+    const nextLikes = nextLiked ? likes + 1 : likes - 1;
+    setLikeState((prev) => ({ ...prev, liked: nextLiked, likes: nextLikes }));
+    likeCache[boardId] = { liked: nextLiked, likes: nextLikes };
+
+    try {
+      const res = nextLiked ? await createLike(boardId) : await deleteLike(boardId);
+      if (res) {
+        const confirmed = { liked: (res.isLiked ?? 0) === 1, likes: res.likeCount ?? nextLikes };
+        setLikeState((prev) => ({ ...prev, ...confirmed }));
+        likeCache[boardId] = confirmed;
+      }
+    } catch (err) {
+      console.error('좋아요 처리 실패', err);
+      setLikeState((prev) => ({ ...prev, liked: !nextLiked, likes: likes }));
+      likeCache[boardId] = { liked: !nextLiked, likes };
+    } finally {
+      likePendingRef.current = false;
+    }
+  };
+
+  const openBoard = async () => {
+    try {
+      await increaseBoardHit(boardId);
+    } finally {
+      router.push(`/boards/${boardId}`);
+    }
+  };
 
   return (
     <article className={styles.card}>
       <div className={styles.header}>
-        <div className={styles.avatar} style={{ background: color }}>
-          {(username || 'U')[0].toUpperCase()}
+        <div
+          className={styles.avatarWrap}
+          onClick={() => router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
+        >
+          {isMediaSrc(profileImageUrl) && profileImageUrl !== avatarErrSrc ? (
+            <img
+              src={toAbsUrl(profileImageUrl)}
+              alt={username}
+              className={styles.avatarImg}
+              onError={() => setAvatarErrSrc(profileImageUrl)}
+            />
+          ) : (
+            <div className={styles.avatar} style={{ background: color }}>
+              {(username || 'U')[0].toUpperCase()}
+            </div>
+          )}
         </div>
-        <div className={styles.meta}>
+        <div
+          className={styles.meta}
+          onClick={() => router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
+        >
           <span className={styles.username}>{username || '알 수 없음'}</span>
           <span className={styles.time}>{timeAgo(createdAt)}</span>
         </div>
-        <button
-          className={`${styles.followBtn} ${following ? styles.following : ''}`}
-          onClick={() => setFollowing(f => !f)}
-        >
-          {following ? '팔로잉' : '팔로우'}
-        </button>
+        {!isOwnPost && following !== null && (
+          <button className={`${styles.followBtn} ${following ? styles.following : ''}`} onClick={handleFollow}>
+            {following ? '팔로잉' : '팔로우'}
+          </button>
+        )}
       </div>
 
       <div
         className={styles.cardLink}
-        onClick={() => router.push(`/boards/${boardId}`)}
+        onClick={openBoard}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && router.push(`/boards/${boardId}`)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') openBoard();
+        }}
       >
-      {imageUrl && (
-        <div className={styles.imageWrap}>
-          <img
-            src={imageUrl}
-            alt={`${username}의 게시물`}
-            className={styles.image}
-            loading="lazy"
-          />
-        </div>
-      )}
-
-      <div className={styles.body}>
-        {tags && tags.length > 0 && (
-          <div className={styles.tags}>
-            {tags.map(tag => (
-              <span key={tag} className={styles.tag}>#{tag}</span>
-            ))}
+        {images.length > 0 && (
+          <div className={styles.mediaFrame}>
+            <div className={styles.mediaList} ref={mediaListRef} onScroll={handleMediaScroll}>
+              {images.map((url, index) => (
+                <div className={styles.imageWrap} key={`${url}-${index}`}>
+                  <img
+                    src={isMediaSrc(url) ? toMediaSrc(url) : '/no-image.svg'}
+                    alt={`${username} 게시물 이미지 ${index + 1}`}
+                    className={styles.image}
+                    loading="lazy"
+                    onError={(e) => {
+                      useBackupImageOnError(e, backupImages[index]);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className={`${styles.mediaArrow} ${styles.mediaArrowPrev}`}
+                  onClick={(event) => moveMedia(event, -1)}
+                  disabled={currentMediaIndex === 0}
+                  aria-label="Previous image"
+                >
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.mediaArrow} ${styles.mediaArrowNext}`}
+                  onClick={(event) => moveMedia(event, 1)}
+                  disabled={currentMediaIndex === images.length - 1}
+                  aria-label="Next image"
+                >
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+              </>
+            )}
           </div>
         )}
 
-        {content && (
-          <p className={styles.content}>
-            {!expanded && isLong ? (
-              <>
-                {content.slice(0, 80)}
-                {'... '}
-                <button className={styles.moreBtn} onClick={(e) => { e.stopPropagation(); setExpanded(true); }}>더보기</button>
-              </>
-            ) : content}
-          </p>
-        )}
+        <div className={styles.body}>
+          {tags && tags.length > 0 && (
+            <div className={styles.tags}>
+              {tags.map((tag) => (
+                <span key={tag} className={styles.tag}>
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
 
-        <div className={styles.stats}>
-        <span className={styles.stat}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-          {(hitcount || 0).toLocaleString()}
-        </span>
-        <span className={styles.stat}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-          {(commentCount || 0).toLocaleString()}
-        </span>
+          {content && (
+            <p className={styles.content}>
+              {!expanded && isLong ? (
+                <>
+                  {content.slice(0, 80)}
+                  {'... '}
+                  <button
+                    className={styles.moreBtn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpanded(true);
+                    }}
+                  >
+                    더보기
+                  </button>
+                </>
+              ) : (
+                content
+              )}
+            </p>
+          )}
+
+          <div className={styles.stats}>
+            {/* 좋아요 버튼  */}
+            <button className={styles.stat} onClick={handleLike}>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill={liked ? '#ef4444' : 'none'}
+                stroke={liked ? '#ef4444' : 'currentColor'}
+                strokeWidth="2"
+              >
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              {likes.toLocaleString()}
+            </button>
+            <span className={styles.stat}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              {(hitcount || 0).toLocaleString()}
+            </span>
+            <span className={styles.stat}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              {(commentCount || 0).toLocaleString()}
+            </span>
+          </div>
         </div>
-      </div>
       </div>
     </article>
   );

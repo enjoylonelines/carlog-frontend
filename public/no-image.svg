@@ -1,0 +1,315 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#08090D"/>
+      <stop offset="60%" stop-color="#0E1018"/>
+      <stop offset="100%" stop-color="#14101A"/>
+    </linearGradient>
+    <radialGradient id="spotlight" cx="50%" cy="30%" r="55%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="groundGlow" cx="50%" cy="100%" r="55%">
+      <stop offset="0%" stop-color="#E03131" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#E03131" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="carTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2E3245"/>
+      <stop offset="100%" stop-color="#181B28"/>
+    </linearGradient>
+    <linearGradient id="carBot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1E2135"/>
+      <stop offset="100%" stop-color="#10111A"/>
+    </linearGradient>
+    <radialGradient id="wheelGrad" cx="38%" cy="32%" r="68%">
+      <stop offset="0%" stop-color="#32354A"/>
+      <stop offset="100%" stop-color="#0A0B0F"/>
+    </radialGradient>
+    <radialGradient id="rimGrad" cx="32%" cy="28%" r="72%">
+      <stop offset="0%" stop-color="#606475"/>
+      <stop offset="100%" stop-color="#22242E"/>
+    </radialGradient>
+    <linearGradient id="glassGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E03131" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#8B0000" stop-opacity="0.08"/>
+    </linearGradient>
+    <filter id="redGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="logoGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- ░░░ BACKGROUND ░░░ -->
+  <rect width="600" height="450" fill="url(#bg)"/>
+  <rect width="600" height="450" fill="url(#spotlight)"/>
+  <rect width="600" height="450" fill="url(#groundGlow)"/>
+
+  <!-- 미세 격자 -->
+  <g stroke="white" stroke-opacity="0.025" stroke-width="1">
+    <line x1="0" y1="90"  x2="600" y2="90"/>
+    <line x1="0" y1="180" x2="600" y2="180"/>
+    <line x1="0" y1="270" x2="600" y2="270"/>
+    <line x1="0" y1="360" x2="600" y2="360"/>
+    <line x1="120" y1="0" x2="120" y2="450"/>
+    <line x1="240" y1="0" x2="240" y2="450"/>
+    <line x1="360" y1="0" x2="360" y2="450"/>
+    <line x1="480" y1="0" x2="480" y2="450"/>
+  </g>
+
+  <!-- 속도감 라인 (좌측) -->
+  <g stroke="#E03131" stroke-linecap="round">
+    <line x1="0" y1="210" x2="105" y2="210" stroke-width="2.5" stroke-opacity="0.10"/>
+    <line x1="0" y1="224" x2="78"  y2="224" stroke-width="1.5" stroke-opacity="0.07"/>
+    <line x1="0" y1="238" x2="92"  y2="238" stroke-width="1"   stroke-opacity="0.06"/>
+    <line x1="0" y1="252" x2="68"  y2="252" stroke-width="1.5" stroke-opacity="0.07"/>
+    <line x1="0" y1="266" x2="84"  y2="266" stroke-width="2"   stroke-opacity="0.09"/>
+    <line x1="0" y1="280" x2="72"  y2="280" stroke-width="1"   stroke-opacity="0.05"/>
+  </g>
+  <!-- 속도감 라인 (우측) -->
+  <g stroke="#E03131" stroke-linecap="round">
+    <line x1="495" y1="210" x2="600" y2="210" stroke-width="2" stroke-opacity="0.09"/>
+    <line x1="512" y1="224" x2="600" y2="224" stroke-width="1.5" stroke-opacity="0.07"/>
+    <line x1="502" y1="238" x2="600" y2="238" stroke-width="1"   stroke-opacity="0.05"/>
+    <line x1="518" y1="252" x2="600" y2="252" stroke-width="1.5" stroke-opacity="0.07"/>
+    <line x1="506" y1="266" x2="600" y2="266" stroke-width="2"   stroke-opacity="0.09"/>
+    <line x1="520" y1="280" x2="600" y2="280" stroke-width="1"   stroke-opacity="0.05"/>
+  </g>
+
+  <!-- ░░░ CAR BODY ░░░ -->
+
+  <!-- 차체 메인 -->
+  <path
+    d="M 90,300
+       C 76,300 64,290 64,276
+       L 64,260
+       C 64,246 74,236 88,234
+       L 152,216
+       L 198,206
+       C 210,203 218,198 224,190
+       L 242,168
+       L 252,162
+       L 354,160
+       L 388,176
+       L 420,198
+       L 440,192
+       C 454,189 466,197 472,210
+       C 500,224 522,250 524,276
+       L 524,292
+       C 524,300 516,306 508,302
+       L 90,300 Z"
+    fill="url(#carBot)"
+    stroke="white" stroke-opacity="0.06" stroke-width="1"
+  />
+
+  <!-- 캐빈 상단 (유리 위 차체) -->
+  <path
+    d="M 198,206
+       C 210,203 218,198 224,190
+       L 242,168
+       L 252,162
+       L 354,160
+       L 388,176
+       L 418,202
+       L 380,208
+       L 240,210 Z"
+    fill="url(#carTop)"
+    stroke="white" stroke-opacity="0.06" stroke-width="1"
+  />
+
+  <!-- 유리창 -->
+  <path
+    d="M 202,208
+       L 228,188
+       C 233,182 240,178 248,176
+       L 354,174
+       C 362,174 370,178 376,184
+       L 406,204
+       L 370,210
+       L 238,212 Z"
+    fill="url(#glassGrad)"
+    stroke="#E03131" stroke-opacity="0.18" stroke-width="0.8"
+  />
+
+  <!-- 유리 하이라이트 -->
+  <path
+    d="M 210,206 L 230,192 L 252,182 L 320,180"
+    fill="none" stroke="white" stroke-opacity="0.12" stroke-width="1.5" stroke-linecap="round"
+  />
+
+  <!-- A-필러 -->
+  <line x1="252" y1="162" x2="238" y2="210" stroke="white" stroke-opacity="0.15" stroke-width="2"/>
+  <!-- C-필러 -->
+  <line x1="354" y1="160" x2="375" y2="206" stroke="white" stroke-opacity="0.12" stroke-width="1.5"/>
+
+  <!-- 캐릭터 라인 (차체 측면 크리즈) -->
+  <path
+    d="M 92,258 C 150,252 200,248 310,246 C 390,244 450,248 508,258"
+    fill="none" stroke="white" stroke-opacity="0.18" stroke-width="1.5" stroke-linecap="round"
+  />
+
+  <!-- 도어 라인 -->
+  <path d="M 316,210 L 322,300" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+
+  <!-- 사이드 미러 -->
+  <path d="M 196,210 L 205,216 L 192,222 L 185,216 Z"
+    fill="#161824" stroke="white" stroke-opacity="0.12" stroke-width="1"/>
+  <line x1="188" y1="216" x2="202" y2="216" stroke="white" stroke-opacity="0.08" stroke-width="1"/>
+
+  <!-- 전조등 -->
+  <path d="M 64,250 L 88,242 L 92,254 L 64,262 Z"
+    fill="#FFE57A" fill-opacity="0.85"
+    stroke="#FFD700" stroke-opacity="0.4" stroke-width="0.5"/>
+  <!-- DRL -->
+  <path d="M 88,242 L 150,228" stroke="#FFE57A" stroke-opacity="0.4"
+    stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- 후미등 -->
+  <path d="M 508,246 L 524,252 L 524,274 L 508,270 Z"
+    fill="#E03131" fill-opacity="0.9"
+    stroke="#FF4444" stroke-opacity="0.5" stroke-width="0.5"/>
+  <path d="M 508,252 L 524,256 L 524,264 L 508,262 Z"
+    fill="#FF8888" fill-opacity="0.6"/>
+
+  <!-- 프런트 스플리터 -->
+  <path d="M 64,280 L 92,286 L 90,300 L 64,296 Z"
+    fill="#0C0D12" stroke="#E03131" stroke-opacity="0.35" stroke-width="1"/>
+  <!-- 리어 디퓨저 -->
+  <path d="M 508,285 L 524,280 L 524,300 L 508,300 Z"
+    fill="#0C0D12" stroke="#E03131" stroke-opacity="0.35" stroke-width="1"/>
+  <!-- 디퓨저 핀 -->
+  <line x1="512" y1="285" x2="512" y2="300" stroke="#E03131" stroke-opacity="0.2" stroke-width="1"/>
+  <line x1="516" y1="283" x2="516" y2="300" stroke="#E03131" stroke-opacity="0.2" stroke-width="1"/>
+  <line x1="520" y1="281" x2="520" y2="300" stroke="#E03131" stroke-opacity="0.2" stroke-width="1"/>
+
+  <!-- ░░░ FRONT WHEEL ░░░ -->
+  <circle cx="186" cy="300" r="48" fill="#08090D"/>
+  <circle cx="186" cy="300" r="44" fill="url(#wheelGrad)"/>
+  <circle cx="186" cy="300" r="44" fill="none" stroke="white" stroke-opacity="0.08" stroke-width="1"/>
+  <circle cx="186" cy="300" r="33" fill="url(#rimGrad)"/>
+  <circle cx="186" cy="300" r="33" fill="none" stroke="white" stroke-opacity="0.12" stroke-width="1"/>
+  <!-- 6-스포크 -->
+  <g stroke="white" stroke-linecap="round" stroke-width="3">
+    <line x1="186" y1="272" x2="186" y2="284" stroke-opacity="0.4"/>
+    <line x1="186" y1="316" x2="186" y2="328" stroke-opacity="0.4"/>
+    <line x1="157" y1="283" x2="167" y2="290" stroke-opacity="0.35"/>
+    <line x1="205" y1="310" x2="215" y2="317" stroke-opacity="0.35"/>
+    <line x1="157" y1="317" x2="167" y2="310" stroke-opacity="0.35"/>
+    <line x1="205" y1="290" x2="215" y2="283" stroke-opacity="0.35"/>
+  </g>
+  <!-- 스포크 내부 라인 -->
+  <g stroke="white" stroke-linecap="round" stroke-width="1.5" stroke-opacity="0.15">
+    <line x1="186" y1="285" x2="186" y2="293"/>
+    <line x1="186" y1="307" x2="186" y2="315"/>
+    <line x1="168" y1="291" x2="175" y2="296"/>
+    <line x1="197" y1="304" x2="204" y2="309"/>
+    <line x1="168" y1="309" x2="175" y2="304"/>
+    <line x1="197" y1="296" x2="204" y2="291"/>
+  </g>
+  <!-- 센터 캡 -->
+  <circle cx="186" cy="300" r="13" fill="#E03131"/>
+  <circle cx="186" cy="300" r="8"  fill="#C02020"/>
+  <circle cx="186" cy="300" r="5"  fill="white" fill-opacity="0.5"/>
+  <circle cx="183" cy="297" r="2"  fill="white" fill-opacity="0.4"/>
+
+  <!-- ░░░ REAR WHEEL ░░░ -->
+  <circle cx="428" cy="300" r="48" fill="#08090D"/>
+  <circle cx="428" cy="300" r="44" fill="url(#wheelGrad)"/>
+  <circle cx="428" cy="300" r="44" fill="none" stroke="white" stroke-opacity="0.08" stroke-width="1"/>
+  <circle cx="428" cy="300" r="33" fill="url(#rimGrad)"/>
+  <circle cx="428" cy="300" r="33" fill="none" stroke="white" stroke-opacity="0.12" stroke-width="1"/>
+  <!-- 6-스포크 -->
+  <g stroke="white" stroke-linecap="round" stroke-width="3">
+    <line x1="428" y1="272" x2="428" y2="284" stroke-opacity="0.4"/>
+    <line x1="428" y1="316" x2="428" y2="328" stroke-opacity="0.4"/>
+    <line x1="399" y1="283" x2="409" y2="290" stroke-opacity="0.35"/>
+    <line x1="447" y1="310" x2="457" y2="317" stroke-opacity="0.35"/>
+    <line x1="399" y1="317" x2="409" y2="310" stroke-opacity="0.35"/>
+    <line x1="447" y1="290" x2="457" y2="283" stroke-opacity="0.35"/>
+  </g>
+  <g stroke="white" stroke-linecap="round" stroke-width="1.5" stroke-opacity="0.15">
+    <line x1="428" y1="285" x2="428" y2="293"/>
+    <line x1="428" y1="307" x2="428" y2="315"/>
+    <line x1="410" y1="291" x2="417" y2="296"/>
+    <line x1="439" y1="304" x2="446" y2="309"/>
+    <line x1="410" y1="309" x2="417" y2="304"/>
+    <line x1="439" y1="296" x2="446" y2="291"/>
+  </g>
+  <circle cx="428" cy="300" r="13" fill="#E03131"/>
+  <circle cx="428" cy="300" r="8"  fill="#C02020"/>
+  <circle cx="428" cy="300" r="5"  fill="white" fill-opacity="0.5"/>
+  <circle cx="425" cy="297" r="2"  fill="white" fill-opacity="0.4"/>
+
+  <!-- ░░░ CAR GLOW OUTLINE ░░░ -->
+  <path
+    d="M 90,300
+       C 76,300 64,290 64,276
+       L 64,260 C 64,246 74,236 88,234
+       L 152,216 L 198,206
+       C 210,203 218,198 224,190
+       L 242,168 L 252,162 L 354,160
+       L 388,176 L 420,198 L 440,192
+       C 454,189 466,197 472,210
+       C 500,224 522,250 524,276
+       L 524,292 C 524,300 516,306 508,302
+       L 90,300 Z"
+    fill="none"
+    stroke="#E03131" stroke-width="1.5" stroke-opacity="0.6"
+    filter="url(#redGlow)"
+  />
+
+  <!-- ░░░ GROUND ░░░ -->
+  <ellipse cx="300" cy="348" rx="245" ry="16" fill="black" fill-opacity="0.6"/>
+  <ellipse cx="307" cy="346" rx="170" ry="7" fill="#E03131" fill-opacity="0.14"/>
+  <line x1="30" y1="348" x2="570" y2="348" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+
+  <!-- ░░░ LOGO ░░░ -->
+  <!-- 상단 레드 라인 -->
+  <rect x="0" y="0" width="600" height="3" fill="#E03131"/>
+
+  <!-- 코너 브래킷 -->
+  <g stroke="#E03131" stroke-opacity="0.55" stroke-width="1.5" fill="none" stroke-linecap="round">
+    <path d="M 22,16 L 22,36 L 42,36"/>
+    <path d="M 578,16 L 578,36 L 558,36"/>
+    <path d="M 22,434 L 22,414 L 42,414"/>
+    <path d="M 578,434 L 578,414 L 558,414"/>
+  </g>
+
+  <!-- 배경 대형 워터마크 -->
+  <text x="300" y="120" text-anchor="middle"
+    fill="white" fill-opacity="0.025"
+    font-size="100" font-weight="900"
+    font-family="system-ui,-apple-system,sans-serif"
+    letter-spacing="10">CARLOG</text>
+
+  <!-- 로고 본체 -->
+  <g filter="url(#logoGlow)">
+    <rect x="220" y="76" width="160" height="2" rx="1" fill="#E03131" fill-opacity="0.9"/>
+  </g>
+  <g transform="translate(300,66)">
+    <circle cx="-72" cy="-1" r="6" fill="#E03131"/>
+    <text x="-60" y="8"
+      fill="white" fill-opacity="0.95"
+      font-size="26" font-weight="700"
+      font-family="system-ui,-apple-system,sans-serif"
+      letter-spacing="6">CARLOG</text>
+  </g>
+  <rect x="220" y="76" width="160" height="2" rx="1" fill="#E03131" fill-opacity="0.9"/>
+
+  <!-- ░░░ BOTTOM ░░░ -->
+  <text x="300" y="402"
+    text-anchor="middle"
+    fill="white" fill-opacity="0.18"
+    font-size="9" letter-spacing="5"
+    font-family="system-ui,-apple-system,sans-serif">NO IMAGE</text>
+
+  <!-- 하단 레드 라인 -->
+  <rect x="0" y="447" width="600" height="3" fill="#E03131"/>
+</svg>

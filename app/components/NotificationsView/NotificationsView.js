@@ -1,6 +1,22 @@
 'use client';
-import { useState } from 'react';
+import { useContext, useState, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { NotificationContext } from '../../../contexts/NotificationContext';
+import { increaseBoardHit } from '../../../api';
+import { avatarColor } from '../../utils/avatar';
 import styles from './NotificationsView.module.css';
+
+function NotifAvatar({ src, fallbackColor, username }) {
+  const [errSrc, setErrSrc] = useState(null);
+  if (src && src !== errSrc) {
+    return <img src={src} alt={username} className={styles.avatarImg} onError={() => setErrSrc(src)} />;
+  }
+  return (
+    <div className={styles.avatar} style={{ background: fallbackColor }}>
+      {username[0].toUpperCase()}
+    </div>
+  );
+}
 
 function timeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr)) / 1000;
@@ -13,105 +29,171 @@ function timeAgo(dateStr) {
 
 const FollowBadge = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="white" stroke="none">
-    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
   </svg>
 );
 
 const CommentBadge = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="white" stroke="none">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
+const PostBadge = () => (
+  <svg width="10" height="10" viewBox="0 0 24 24" fill="white" stroke="none">
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" />
   </svg>
 );
 
 const TYPE_META = {
-  FOLLOW:  { label: '팔로우',  badgeBg: '#3897F0', Badge: FollowBadge },
-  COMMENT: { label: '댓글',    badgeBg: '#E03131', Badge: CommentBadge },
+  FOLLOW: {
+    label: '팔로우',
+    badgeBg: '#3897F0',
+    Badge: FollowBadge,
+    message: '회원님을 팔로우하기 시작했습니다.',
+  },
+  COMMENT: {
+    label: '댓글',
+    badgeBg: '#E03131',
+    Badge: CommentBadge,
+    message: '댓글을 남겼습니다.',
+  },
+  NEW_POST: {
+    label: '새 게시글',
+    badgeBg: '#F76707',
+    Badge: PostBadge,
+    message: '게시글이 추가되었습니다.',
+  },
 };
 
-const now = Date.now();
-const MOCK_NOTIFICATIONS = [
-  {
-    id: 1, type: 'FOLLOW',
-    actorUsername: 'speedking_kim', actorColor: '#E03131',
-    message: '회원님을 팔로우하기 시작했습니다.',
-    createdAt: new Date(now - 5 * 60 * 1000).toISOString(),
-    isRead: false,
-  },
-  {
-    id: 2, type: 'COMMENT',
-    actorUsername: 'porsche_diary', actorColor: '#45B7D1',
-    message: '댓글을 남겼습니다: "정말 멋진 차네요! 저도 드라이브 가고 싶어지네요 😍"',
-    createdAt: new Date(now - 32 * 60 * 1000).toISOString(),
-    isRead: false,
-  },
-  {
-    id: 3, type: 'FOLLOW',
-    actorUsername: 'ev_pioneer_choi', actorColor: '#96CEB4',
-    message: '회원님을 팔로우하기 시작했습니다.',
-    createdAt: new Date(now - 2 * 3600 * 1000).toISOString(),
-    isRead: true,
-  },
-  {
-    id: 4, type: 'COMMENT',
-    actorUsername: 'tuning_master', actorColor: '#6C5CE7',
-    message: '댓글을 남겼습니다: "저도 같은 모델 타는데 공감 100%입니다 👍"',
-    createdAt: new Date(now - 5 * 3600 * 1000).toISOString(),
-    isRead: true,
-  },
-  {
-    id: 5, type: 'FOLLOW',
-    actorUsername: 'lambo_seoul', actorColor: '#FD9644',
-    message: '회원님을 팔로우하기 시작했습니다.',
-    createdAt: new Date(now - 1 * 86400 * 1000).toISOString(),
-    isRead: true,
-  },
-  {
-    id: 6, type: 'COMMENT',
-    actorUsername: 'bmw_lover99', actorColor: '#2196F3',
-    message: '댓글을 남겼습니다: "오 저도 다음 주 드라이브 계획 중인데 코스 공유해주실 수 있나요?"',
-    createdAt: new Date(now - 2 * 86400 * 1000).toISOString(),
-    isRead: true,
-  },
-];
+const SWIPE_THRESHOLD = 60;
+const DELETE_SNAP = 72;
 
-function NotifItem({ item, onRead }) {
-  const meta = TYPE_META[item.type];
+function SwipeableNotifItem({ item, onRead, onReadBySenderAndType, onDelete }) {
+  const router = useRouter();
+  const meta = TYPE_META[item.type] ?? TYPE_META.COMMENT;
+
+  const startXRef = useRef(null);
+  const currentXRef = useRef(0);
+  const innerRef = useRef(null);
+  const [swiped, setSwiped] = useState(false);
+
+  const snapTo = useCallback((x, animate = true) => {
+    const el = innerRef.current;
+    if (!el) return;
+    if (animate) el.style.transition = 'transform 0.2s ease';
+    else el.style.transition = 'none';
+    el.style.transform = `translateX(${x}px)`;
+    currentXRef.current = x;
+  }, []);
+
+  const handleTouchStart = (e) => {
+    startXRef.current = e.touches[0].clientX;
+    if (innerRef.current) innerRef.current.style.transition = 'none';
+  };
+
+  const handleTouchMove = (e) => {
+    if (startXRef.current === null) return;
+    const dx = e.touches[0].clientX - startXRef.current;
+    const base = swiped ? -DELETE_SNAP : 0;
+    const next = Math.min(0, Math.max(-DELETE_SNAP - 10, base + dx));
+    if (innerRef.current) innerRef.current.style.transform = `translateX(${next}px)`;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (startXRef.current === null) return;
+    const dx = e.changedTouches[0].clientX - startXRef.current;
+    startXRef.current = null;
+
+    if (!swiped && dx < -SWIPE_THRESHOLD) {
+      snapTo(-DELETE_SNAP);
+      setSwiped(true);
+    } else if (swiped && dx > SWIPE_THRESHOLD) {
+      snapTo(0);
+      setSwiped(false);
+    } else {
+      snapTo(swiped ? -DELETE_SNAP : 0);
+    }
+  };
+
+  const openBoard = async (boardId) => {
+    try {
+      await increaseBoardHit(boardId);
+    } finally {
+      router.push(`/boards/${boardId}`);
+    }
+  };
+
+  const handleItemClick = () => {
+    if (swiped) {
+      snapTo(0);
+      setSwiped(false);
+      return;
+    }
+    if (item.type === 'NEW_POST') {
+      onReadBySenderAndType(item.senderId, 'NEW_POST');
+    } else {
+      onRead(item.id);
+    }
+    if (item.type === 'FOLLOW') {
+      router.push(`/users/${item.senderId}`);
+    } else if (item.boardId) {
+      openBoard(item.boardId);
+    }
+  };
+
   return (
-    <button
-      className={`${styles.item} ${!item.isRead ? styles.unread : ''}`}
-      onClick={() => onRead(item.id)}
-    >
-      <div className={styles.avatarWrap}>
-        <div className={styles.avatar} style={{ background: item.actorColor }}>
-          {item.actorUsername[0].toUpperCase()}
-        </div>
-        <span className={styles.badge} style={{ background: meta.badgeBg }}>
-          <meta.Badge />
-        </span>
+    <div className={styles.swipeRow}>
+      <div
+        ref={innerRef}
+        className={styles.swipeInner}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <button className={`${styles.item} ${!item.isRead ? styles.unread : ''}`} onClick={handleItemClick}>
+          <div className={styles.avatarWrap}>
+            {item.actorProfileImageUrl ? (
+              <NotifAvatar src={item.actorProfileImageUrl} fallbackColor={item.actorColor} username={item.actorUsername} />
+            ) : (
+              <div className={styles.avatar} style={{ background: item.actorColor }}>
+                {item.actorUsername[0].toUpperCase()}
+              </div>
+            )}
+            <span className={styles.badge} style={{ background: meta.badgeBg }}>
+              <meta.Badge />
+            </span>
+          </div>
+          <div className={styles.textWrap}>
+            <p className={styles.message}>
+              <strong>{item.actorUsername}</strong> {meta.message}
+            </p>
+            {item.content && (
+              <p className={styles.commentPreview}>{item.content}</p>
+            )}
+            <span className={styles.time}>{timeAgo(item.createdAt)}</span>
+          </div>
+          {!item.isRead && <div className={styles.dot} />}
+        </button>
       </div>
-      <div className={styles.textWrap}>
-        <p className={styles.message}>
-          <strong>{item.actorUsername}</strong>
-          {' '}
-          {item.message}
-        </p>
-        <span className={styles.time}>{timeAgo(item.createdAt)}</span>
-      </div>
-      {!item.isRead && <div className={styles.dot} />}
-    </button>
+      <button className={styles.deleteReveal} onClick={() => onDelete(item.id)} aria-label="삭제">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14H6L5 6" />
+          <path d="M10 11v6M14 11v6" />
+          <path d="M9 6V4h6v2" />
+        </svg>
+      </button>
+    </div>
   );
 }
 
 export default function NotificationsView() {
-  const [items, setItems] = useState(MOCK_NOTIFICATIONS);
-
-  const markRead = (id) =>
-    setItems((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
-
-  const markAllRead = () =>
-    setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
-
-  const unreadCount = items.filter((n) => !n.isRead).length;
+  const { items, unreadCount, markRead, markAllRead, markReadBySenderAndType, deleteOne, deleteAll } =
+    useContext(NotificationContext);
 
   const todayItems = items.filter((n) => Date.now() - new Date(n.createdAt) < 86400 * 1000);
   const olderItems = items.filter((n) => Date.now() - new Date(n.createdAt) >= 86400 * 1000);
@@ -120,24 +202,47 @@ export default function NotificationsView() {
     <div className={styles.wrap}>
       <div className={styles.topBar}>
         <h1 className={styles.title}>알림</h1>
-        {unreadCount > 0 && (
-          <button className={styles.readAllBtn} onClick={markAllRead}>
-            모두 읽음
-          </button>
-        )}
+        <div className={styles.topActions}>
+          {unreadCount > 0 && (
+            <button className={styles.readAllBtn} onClick={markAllRead}>
+              모두 읽음
+            </button>
+          )}
+          {items.length > 0 && (
+            <button className={styles.deleteAllBtn} onClick={deleteAll}>
+              전체 삭제
+            </button>
+          )}
+        </div>
       </div>
 
       {todayItems.length > 0 && (
         <section>
           <div className={styles.sectionLabel}>오늘</div>
-          {todayItems.map((n) => <NotifItem key={n.id} item={n} onRead={markRead} />)}
+          {todayItems.map((n) => (
+            <SwipeableNotifItem
+              key={n.id}
+              item={n}
+              onRead={markRead}
+              onReadBySenderAndType={markReadBySenderAndType}
+              onDelete={deleteOne}
+            />
+          ))}
         </section>
       )}
 
       {olderItems.length > 0 && (
         <section>
           <div className={styles.sectionLabel}>이번 주</div>
-          {olderItems.map((n) => <NotifItem key={n.id} item={n} onRead={markRead} />)}
+          {olderItems.map((n) => (
+            <SwipeableNotifItem
+              key={n.id}
+              item={n}
+              onRead={markRead}
+              onReadBySenderAndType={markReadBySenderAndType}
+              onDelete={deleteOne}
+            />
+          ))}
         </section>
       )}
 
