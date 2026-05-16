@@ -20,6 +20,7 @@ import {
 } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
 import { BOARD_DELETED_EVENT, markFeedStale } from '../../utils/feedRefresh';
+import { toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
 import { NotificationContext } from '../../../contexts/NotificationContext';
 import { likeCache } from '../../utils/likeCache';
 import styles from './page.module.css';
@@ -45,8 +46,6 @@ function Avatar({ userId, username, profileImageUrl, className }) {
     </div>
   );
 }
-
-const mediaUrl = (url) => url || '';
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
@@ -99,7 +98,8 @@ export default function BoardDetailPage() {
   const mediaListRef = useRef(null);
 
   const mediaUrls = board?.mediaUrls || [];
-  const firstImageUrl = mediaUrls.length > 0 ? mediaUrl(mediaUrls[0]) : '/no-image.svg';
+  const mediaBackupUrls = board?.mediaBackupUrls || [];
+  const firstImageUrl = mediaUrls.length > 0 ? mediaUrls[0] : '/no-image.svg';
 
   const mergeReplies = (existing, fetched) => {
     const existingList = Array.isArray(existing) ? existing : [];
@@ -541,11 +541,11 @@ export default function BoardDetailPage() {
                 {mediaUrls.map((url, index) => (
                   <div className={styles.imageWrap} key={`${url}-${index}`}>
                     <img
-                      src={mediaUrl(url) || '/no-image.svg'}
+                      src={url ? toMediaSrc(url) : '/no-image.svg'}
                       alt={`게시물 이미지 ${index + 1}`}
                       className={styles.image}
                       onError={(e) => {
-                        e.currentTarget.src = '/no-image.svg';
+                        useBackupImageOnError(e, mediaBackupUrls[index]);
                       }}
                     />
                   </div>
