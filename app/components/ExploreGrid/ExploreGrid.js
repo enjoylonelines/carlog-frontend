@@ -5,6 +5,7 @@ import HashtagBar from '../HashtagBar/HashtagBar';
 import { getHashtags, getExploreBoards, increaseBoardHit } from '../../../api';
 import { useScrollRestore } from '../../hooks/useScrollRestore';
 import { toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
+import { markBoardViewed } from '../../utils/feedRefresh';
 import styles from './ExploreGrid.module.css';
 
 // 모듈 레벨 캐시
@@ -118,6 +119,14 @@ export default function ExploreGrid() {
   const openBoard = async (boardId) => {
     try {
       await increaseBoardHit(boardId);
+      markBoardViewed(boardId);
+      setItems((prev) => {
+        const next = prev.map((item) => (
+          item.boardId === boardId ? { ...item, hitcount: (item.hitcount || 0) + 1 } : item
+        ));
+        _cachedItems = next;
+        return next;
+      });
     } finally {
       router.push(`/boards/${boardId}`);
     }

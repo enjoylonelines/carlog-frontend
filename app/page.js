@@ -7,7 +7,7 @@ import PostCard from './components/PostCard/PostCard';
 import { getHashtags, searchBoards } from '../api';
 import { useScrollRestore } from './hooks/useScrollRestore';
 import { avatarColor } from './utils/avatar';
-import { BOARD_DELETED_EVENT, BOARD_SAVED_EVENT, clearFeedStale, isFeedStale } from './utils/feedRefresh';
+import { BOARD_DELETED_EVENT, BOARD_SAVED_EVENT, BOARD_VIEWED_EVENT, clearFeedStale, isFeedStale } from './utils/feedRefresh';
 import styles from './page.module.css';
 
 const mapBoard = (board) => ({
@@ -176,6 +176,24 @@ export default function FeedPage() {
       }
     };
   }, [refreshFeed]);
+
+  useEffect(() => {
+    const handleBoardViewed = (event) => {
+      const viewedBoardId = event.detail?.boardId;
+      if (!viewedBoardId) return;
+
+      setPosts((prev) => {
+        const next = prev.map((post) => (
+          post.boardId === viewedBoardId ? { ...post, hitcount: (post.hitcount || 0) + 1 } : post
+        ));
+        if (!selectedTag && !keyword) _cachedPosts = next;
+        return next;
+      });
+    };
+
+    window.addEventListener(BOARD_VIEWED_EVENT, handleBoardViewed);
+    return () => window.removeEventListener(BOARD_VIEWED_EVENT, handleBoardViewed);
+  }, [selectedTag, keyword]);
 
   // posts가 DOM에 반영된 후 pending 스크롤 복원 실행 (새로고침 포함)
   useEffect(() => {
