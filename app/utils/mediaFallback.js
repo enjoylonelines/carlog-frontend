@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export const toMediaSrc = (url) => {
@@ -23,4 +25,33 @@ export const useBackupImageOnError = (event, backupUrl) => {
   if (!img.src.endsWith('/no-image.svg')) {
     img.src = '/no-image.svg';
   }
+};
+
+// fetch로 이미지를 가져와 blob URL로 변환 (ngrok 헤더 우회)
+export const useFetchedImage = (url) => {
+  const [blobUrl, setBlobUrl] = useState(null);
+
+  useEffect(() => {
+    if (!url) return;
+    const absUrl = toMediaSrc(url);
+    const headers = { 'ngrok-skip-browser-warning': 'true' };
+    let objectUrl = null;
+
+    fetch(absUrl, { headers })
+      .then((res) => {
+        if (!res.ok) throw new Error('fetch failed');
+        return res.blob();
+      })
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        setBlobUrl(objectUrl);
+      })
+      .catch(() => setBlobUrl('/no-image.svg'));
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [url]);
+
+  return blobUrl;
 };

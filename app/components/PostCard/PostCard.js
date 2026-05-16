@@ -7,12 +7,17 @@ import { checkFollow, followUser, unfollowUser, increaseBoardHit } from '../../.
 import { avatarColor as getAvatarColor } from '../../utils/avatar';
 import { followCache } from '../../utils/followCache';
 import { likeCache } from '../../utils/likeCache';
-import { isMediaSrc, toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
+import { isMediaSrc, toMediaSrc, useBackupImageOnError, useFetchedImage } from '../../utils/mediaFallback';
 import { markBoardViewed } from '../../utils/feedRefresh';
 import { createLike, deleteLike } from '@/api/like';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 const toAbsUrl = (url) => url && url.startsWith('/') ? `${API_BASE}${url}` : url;
+
+function FetchedImage({ url, backupUrl, alt, className, loading }) {
+  const src = useFetchedImage(url || backupUrl);
+  return <img src={src || '/no-image.svg'} alt={alt} className={className} loading={loading} />;
+}
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
@@ -219,14 +224,12 @@ export default function PostCard({ post }) {
             <div className={styles.mediaList} ref={mediaListRef} onScroll={handleMediaScroll}>
               {images.map((url, index) => (
                 <div className={styles.imageWrap} key={`${url}-${index}`}>
-                  <img
-                    src={isMediaSrc(url) ? toMediaSrc(url) : '/no-image.svg'}
+                  <FetchedImage
+                    url={url}
+                    backupUrl={backupImages[index]}
                     alt={`${username} 게시물 이미지 ${index + 1}`}
                     className={styles.image}
                     loading="lazy"
-                    onError={(e) => {
-                      useBackupImageOnError(e, backupImages[index]);
-                    }}
                   />
                 </div>
               ))}

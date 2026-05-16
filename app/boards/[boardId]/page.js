@@ -23,6 +23,7 @@ import { BOARD_DELETED_EVENT, markFeedStale } from '../../utils/feedRefresh';
 import { toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
 import { NotificationContext } from '../../../contexts/NotificationContext';
 import { likeCache } from '../../utils/likeCache';
+import { followCache } from '../../utils/followCache';
 import styles from './page.module.css';
 import { createLike, deleteLike } from '@/api/like';
 
@@ -195,6 +196,7 @@ export default function BoardDetailPage() {
   const handleFollow = async () => {
     const next = !following;
     setFollowing(next);
+    followCache[board.userId] = next;
     if (next) {
       await followUser({ userId: MY_USER_ID, targetId: board.userId });
     } else {

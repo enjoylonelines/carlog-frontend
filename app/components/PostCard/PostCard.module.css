@@ -101,14 +101,14 @@
 }
 
 .following {
-  background: white;
+  background: #2a2a2a;
   border-color: var(--color-border);
   color: var(--color-text-secondary);
 }
 
 .following:hover {
-  background: #f5f5f5;
-  border-color: #c0c0c0;
+  background: #333333;
+  border-color: var(--color-border);
 }
 
 .cardLink {
