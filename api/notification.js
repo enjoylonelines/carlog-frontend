@@ -21,7 +21,7 @@ export const deleteAllNotifications = async (receiverId) => {
   await client.delete('/api/notifications', { params: { receiverId } });
 };
 
-export const subscribeNotifications = (receiverId, onNotification) => {
+export const subscribeNotifications = (receiverId, onNotification, onRemoved) => {
   const base = process.env.NEXT_PUBLIC_API_URL;
   const url = `${base}/api/notifications/stream?receiverId=${receiverId}`;
 
@@ -59,6 +59,10 @@ export const subscribeNotifications = (receiverId, onNotification) => {
             const data = line.slice(5).trim();
             if (eventName === 'notification') {
               try { onNotification(JSON.parse(data)); } catch { /* 무시 */ }
+            } else if (eventName === 'board_deleted') {
+              try { onRemoved?.({ type: 'BOARD_DELETED', boardId: Number(data) }); } catch { /* 무시 */ }
+            } else if (eventName === 'notification_removed') {
+              try { onRemoved?.(JSON.parse(data)); } catch { /* 무시 */ }
             }
             eventName = '';
           }
