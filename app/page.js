@@ -1,37 +1,12 @@
 'use client';
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import StoriesBar from './components/StoriesBar/StoriesBar';
 import HashtagBar from './components/HashtagBar/HashtagBar';
 import PostCard from './components/PostCard/PostCard';
-import { getHashtags, searchBoards } from '../api';
-import { useScrollRestore } from './hooks/useScrollRestore';
-import { avatarColor } from './utils/avatar';
-import { BOARD_DELETED_EVENT, BOARD_SAVED_EVENT, BOARD_VIEWED_EVENT, clearFeedStale, isFeedStale } from './utils/feedRefresh';
+import { getHashtags } from '../api';
+import { useFeedLoader } from './hooks/useFeedLoader';
 import styles from './page.module.css';
-
-const mapBoard = (board) => ({
-  boardId: board.boardId,
-  userId: board.userId,
-  username: board.username || `user${board.userId}`,
-  avatarColor: avatarColor(board.userId),
-  profileImageUrl: board.profileImageUrl || null,
-  content: board.content || '',
-  hitcount: board.hitcount,
-  createdAt: board.createdDate,
-  tags: board.hashtags || [],
-  commentCount: board.commentCount ?? 0,
-  mediaUrls: board.mediaUrls || [],
-  mediaBackupUrls: board.mediaBackupUrls || [],
-  imageUrl: board.mediaUrls?.[0] || '/no-image.svg',
-  isLike: board.isLike,
-  likeCount: board.likecount,
-});
-
-// 모듈 레벨 캐시 — 네비게이션 간 posts 유지
-let _cachedPosts = [];
-let _cachedHasMore = true;
-let _cachedPage = 1;
 
 export default function FeedPage() {
   const searchParams = useSearchParams();
@@ -40,185 +15,14 @@ export default function FeedPage() {
   const selectedTag = searchParams.get('tag') || null;
   const keyword = searchParams.get('keyword') || '';
 
-  const restoreScroll = useScrollRestore('scroll_feed');
-
   const [hashtags, setHashtags] = useState([]);
-  // 초기값을 모듈 캐시에서 가져와 첫 렌더부터 콘텐츠 표시
-  const [posts, setPosts] = useState(_cachedPosts);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(_cachedHasMore);
-
-  const pageRef = useRef(_cachedPage);
-  const isLoadingRef = useRef(false);
-  const refreshTimerRef = useRef(null);
-  const refreshFeedRef = useRef(null);
-  const sentinelRef = useRef(null);
-  const scrollRestoredRef = useRef(false);
-  const scrollPendingRef = useRef(false);
-
-  // 캐시된 posts가 있을 때만 페인트 전 즉시 복원 — 없으면 loadBoards 후 scrollPendingRef로 처리
-  useLayoutEffect(() => {
-    if (_cachedPosts.length > 0 && !scrollRestoredRef.current && !selectedTag && !keyword) {
-      scrollRestoredRef.current = true;
-      restoreScroll();
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   useEffect(() => {
     getHashtags().then((data) => {
       if (data && Array.isArray(data)) setHashtags(data);
     });
   }, []);
 
-  const loadBoards = useCallback(
-    async (pageNo, append) => {
-      if (isLoadingRef.current) return;
-      isLoadingRef.current = true;
-      setIsLoading(true);
-      if (!append) setHasMore(true);
-
-      const data = await searchBoards({ pageNo, tag: selectedTag || '', keyword });
-      isLoadingRef.current = false;
-      setIsLoading(false);
-
-      const boards = data?.boards;
-      if (boards?.length) {
-        const mapped = boards.map(mapBoard);
-        setPosts((prev) => {
-          const merged = append ? [...prev, ...mapped] : mapped;
-          const seen = new Set();
-          const next = merged.filter((p) => {
-            if (seen.has(p.boardId)) return false;
-            seen.add(p.boardId);
-            return true;
-          });
-          if (!selectedTag && !keyword) _cachedPosts = next;
-          return next;
-        });
-        const more = pageNo < (data.pager?.totalPageNo ?? 1);
-        setHasMore(more);
-        if (!selectedTag && !keyword) {
-          _cachedHasMore = more;
-          _cachedPage = pageNo;
-        }
-      } else {
-        if (!append) {
-          setPosts([]);
-          if (!selectedTag && !keyword) _cachedPosts = [];
-        }
-        setHasMore(false);
-        if (!selectedTag && !keyword) _cachedHasMore = false;
-      }
-      pageRef.current = pageNo;
-
-      // 첫 로드 완료 후 스크롤 복원 — posts DOM 반영 후 실행되도록 pending 플래그
-      if (!append && !scrollRestoredRef.current) {
-        scrollRestoredRef.current = true;
-        scrollPendingRef.current = true;
-      }
-    },
-    [selectedTag, keyword],
-  );
-
-  const refreshFeed = useCallback(() => {
-    if (refreshTimerRef.current) {
-      window.clearTimeout(refreshTimerRef.current);
-      refreshTimerRef.current = null;
-    }
-
-    if (isLoadingRef.current) {
-      refreshTimerRef.current = window.setTimeout(() => {
-        refreshFeedRef.current?.();
-      }, 50);
-      return;
-    }
-
-    clearFeedStale();
-    _cachedPosts = [];
-    _cachedHasMore = true;
-    _cachedPage = 1;
-    pageRef.current = 1;
-    scrollRestoredRef.current = true;
-    scrollPendingRef.current = false;
-    setPosts([]);
-    setHasMore(true);
-    loadBoards(1, false);
-  }, [loadBoards]);
-
-  useEffect(() => {
-    refreshFeedRef.current = refreshFeed;
-  }, [refreshFeed]);
-
-  useEffect(() => {
-    // 댓글 등 변이 후 스탈 플래그가 있으면 캐시 무효화
-    if (isFeedStale()) {
-      refreshFeed();
-      return;
-    }
-    if (!selectedTag && !keyword && _cachedPosts.length > 0) return;
-    scrollRestoredRef.current = false;
-    _cachedPosts = [];
-    pageRef.current = 1;
-    const timer = window.setTimeout(() => {
-      loadBoards(1, false);
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [loadBoards, refreshFeed, selectedTag, keyword]);
-
-  useEffect(() => {
-    window.addEventListener(BOARD_SAVED_EVENT, refreshFeed);
-    window.addEventListener(BOARD_DELETED_EVENT, refreshFeed);
-    return () => {
-      window.removeEventListener(BOARD_SAVED_EVENT, refreshFeed);
-      window.removeEventListener(BOARD_DELETED_EVENT, refreshFeed);
-      if (refreshTimerRef.current) {
-        window.clearTimeout(refreshTimerRef.current);
-      }
-    };
-  }, [refreshFeed]);
-
-  useEffect(() => {
-    const handleBoardViewed = (event) => {
-      const viewedBoardId = event.detail?.boardId;
-      if (!viewedBoardId) return;
-
-      setPosts((prev) => {
-        const next = prev.map((post) => (
-          post.boardId === viewedBoardId ? { ...post, hitcount: (post.hitcount || 0) + 1 } : post
-        ));
-        if (!selectedTag && !keyword) _cachedPosts = next;
-        return next;
-      });
-    };
-
-    window.addEventListener(BOARD_VIEWED_EVENT, handleBoardViewed);
-    return () => window.removeEventListener(BOARD_VIEWED_EVENT, handleBoardViewed);
-  }, [selectedTag, keyword]);
-
-  // posts가 DOM에 반영된 후 pending 스크롤 복원 실행 (새로고침 포함)
-  useEffect(() => {
-    if (scrollPendingRef.current && posts.length > 0) {
-      scrollPendingRef.current = false;
-      restoreScroll();
-    }
-  }, [posts, restoreScroll]);
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !isLoadingRef.current && hasMore) {
-          loadBoards(pageRef.current + 1, true);
-        }
-      },
-      { rootMargin: '200px' },
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasMore, loadBoards, posts.length]);
+  const { posts, isLoading, hasMore, sentinelRef } = useFeedLoader(selectedTag, keyword);
 
   const handleTagSelect = useCallback(
     (tag) => {

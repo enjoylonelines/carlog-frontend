@@ -19,12 +19,12 @@ import {
   updateComment,
 } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
-import { BOARD_DELETED_EVENT, markFeedStale } from '../../utils/feedRefresh';
+import { markFeedStale } from '../../utils/feedRefresh';
+import { onFeedEvent } from '../../utils/feedEventBus';
 import { useFetchedImage } from '../../utils/mediaFallback';
 import FetchedAvatar from '../../components/FetchedAvatar/FetchedAvatar';
 import { NotificationContext } from '../../../contexts/NotificationContext';
-import { likeCache } from '../../utils/likeCache';
-import { followCache } from '../../utils/followCache';
+import { likeCache, followCache } from '../../utils/sessionCache';
 import styles from './page.module.css';
 import { createLike, deleteLike } from '@/api/like';
 
@@ -235,6 +235,16 @@ export default function BoardDetailPage() {
   };
 
   useEffect(() => {
+    return onFeedEvent(({ type, boardId: eventBoardId }) => {
+      if (Number(eventBoardId) !== Number(boardId)) return;
+      if (type === 'LIKE') setLikes((prev) => prev + 1);
+      else if (type === 'UNLIKE') setLikes((prev) => Math.max(0, prev - 1));
+      else if (type === 'COMMENT') setTotalCommentCount((prev) => prev + 1);
+      else if (type === 'COMMENT_DELETED') setTotalCommentCount((prev) => Math.max(0, prev - 1));
+    });
+  }, [boardId]);
+
+  useEffect(() => {
     mediaListRef.current?.scrollTo({ left: 0 });
   }, [boardId, mediaUrls.length]);
 
@@ -270,7 +280,7 @@ export default function BoardDetailPage() {
   const handleDelete = async () => {
     await deleteBoard(boardId);
     deleteNotificationsByBoard(boardId);
-    markFeedStale(BOARD_DELETED_EVENT);
+    markFeedStale();
     router.back();
   };
 
