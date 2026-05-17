@@ -9,16 +9,18 @@ import { useFetchedImage } from '../../utils/mediaFallback';
 export default function FetchedAvatar({ src, fallbackChar, fallbackColor, className, style }) {
   const fetched = useFetchedImage(src || null);
 
+  const centerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'center' };
+
   if (!src || fetched === 'ERROR') {
     return (
-      <div className={className} style={{ background: fallbackColor, ...style }}>
+      <div className={className} style={{ ...centerStyle, background: fallbackColor, ...style }}>
         {fallbackChar}
       </div>
     );
   }
 
   if (fetched === null) {
-    return <div className={className} style={{ background: '#1a1a1a', ...style }} />;
+    return <div className={className} style={{ ...centerStyle, background: '#1a1a1a', ...style }} />;
   }
 
   return <img src={fetched} alt="" className={className} style={style} />;
