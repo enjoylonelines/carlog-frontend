@@ -14,16 +14,6 @@ const isSrc = (url) => !!url && (url.startsWith('/') || url.startsWith('http://'
 
 let _savedTab = 'posts';
 
-const MOCK_PROFILE = {
-  userId: null,
-  username: '카로그왕',
-  bio: '차를 사랑하는 사람입니다. 주말마다 드라이브 🚗\n자동차 관련 정보 공유해요!',
-  avatarColor: '#E03131',
-  followerCount: 0,
-  followingCount: 0,
-  boardCount: 0,
-};
-
 function GridImage({ src, backupSrc, className }) {
   const imgSrc = isSrc(src) ? toMediaSrc(src) : '/no-image.svg';
   return (
@@ -63,7 +53,7 @@ const HeartIcon = ({ filled }) => (
 export default function ProfileView() {
   const router = useRouter();
   const { userId: myUserId, logout, setShowLoginModal, setRedirectUrl } = useContext(AuthContext);
-  const [profile, setProfile] = useState(MOCK_PROFILE);
+  const [profile, setProfile] = useState(null);
   const [profileImgErr, setProfileImgErr] = useState(false);
   const [posts, setPosts] = useState([]);
   const [showEdit, setShowEdit] = useState(false);
@@ -169,6 +159,12 @@ export default function ProfileView() {
   };
 
   if (!myUserId) return null;
+
+  if (!profile) return (
+    <div className={styles.loadingWrap}>
+      <div className={styles.spinner} />
+    </div>
+  );
 
   return (
     <>
