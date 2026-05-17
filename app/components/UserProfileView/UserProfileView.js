@@ -7,7 +7,14 @@ import { searchBoards } from '../../../api';
 import client from '../../../api/client';
 import { avatarColor } from '../../utils/avatar';
 import { followCache } from '../../utils/followCache';
+import { useFetchedImage } from '../../utils/mediaFallback';
 import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
+
+function GridImage({ src, className }) {
+  const fetched = useFetchedImage(src || null);
+  if (fetched === null) return <div className="imgSkeleton"><span className="imgSkeletonIcon" /></div>;
+  return <img src={fetched === 'ERROR' ? '/no-image.svg' : fetched} alt="" className={className} />;
+}
 import styles from './UserProfileView.module.css';
 
 export default function UserProfileView({ userId }) {
@@ -169,15 +176,7 @@ export default function UserProfileView({ userId }) {
         <div className={styles.grid}>
           {posts.map((post) => (
             <button key={post.boardId} className={styles.cell} onClick={() => openBoard(post.boardId)}>
-              <img
-                src={post.mediaUrls?.[0] ? toMediaSrc(post.mediaUrls[0]) : '/no-image.svg'}
-                alt=""
-                className={styles.img}
-                loading="lazy"
-                onError={(e) => {
-                  useBackupImageOnError(e, post.mediaBackupUrls?.[0]);
-                }}
-              />
+              <GridImage src={post.mediaUrls?.[0]} className={styles.img} />
             </button>
           ))}
         </div>
