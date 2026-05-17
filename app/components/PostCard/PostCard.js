@@ -184,6 +184,20 @@ export default function PostCard({ post }) {
     }
   };
 
+  const openAuthorProfile = () => {
+    const authorUrl = userId === MY_USER_ID ? '/profile' : `/users/${userId}`;
+    if (!MY_USER_ID) {
+      setRedirectUrl(authorUrl);
+      setShowLoginModal(true);
+      return;
+    }
+    router.push(authorUrl);
+  };
+
+  const handleAuthorKeyDown = (e) => {
+    if (e.key === 'Enter') openAuthorProfile();
+  };
+
   const closeModal = () => {
     setShowModal(false);
   };
@@ -203,10 +217,10 @@ export default function PostCard({ post }) {
       <div className={styles.header}>
         <div
           className={styles.avatarWrap}
-          onClick={() => router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
+          onClick={openAuthorProfile}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
+          onKeyDown={handleAuthorKeyDown}
         >
           <FetchedAvatar
             src={profileImageUrl}
@@ -217,10 +231,10 @@ export default function PostCard({ post }) {
         </div>
         <div
           className={styles.meta}
-          onClick={() => router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
+          onClick={openAuthorProfile}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
+          onKeyDown={handleAuthorKeyDown}
         >
           <span className={styles.username}>{username || '알 수 없음'}</span>
           <span className={styles.time}>{timeAgo(createdAt)}</span>
