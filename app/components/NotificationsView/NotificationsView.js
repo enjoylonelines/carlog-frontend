@@ -1,7 +1,8 @@
 'use client';
-import { useContext, useState, useRef, useCallback } from 'react';
+import { useContext, useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NotificationContext } from '../../../contexts/NotificationContext';
+import { AuthContext } from '../../../contexts/AuthContext';
 import { increaseBoardHit } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
 import styles from './NotificationsView.module.css';
@@ -192,8 +193,20 @@ function SwipeableNotifItem({ item, onRead, onReadBySenderAndType, onDelete }) {
 }
 
 export default function NotificationsView() {
+  const { userId, setShowLoginModal, setRedirectUrl } = useContext(AuthContext);
+  const router = useRouter();
   const { items, unreadCount, markRead, markAllRead, markReadBySenderAndType, deleteOne, deleteAll } =
     useContext(NotificationContext);
+
+  useEffect(() => {
+    if (!userId) {
+      setRedirectUrl('/notifications');
+      setShowLoginModal(true);
+      router.replace('/');
+    }
+  }, [userId, router, setShowLoginModal, setRedirectUrl]);
+
+  if (!userId) return null;
 
   const todayItems = items.filter((n) => Date.now() - new Date(n.createdAt) < 86400 * 1000);
   const olderItems = items.filter((n) => Date.now() - new Date(n.createdAt) >= 86400 * 1000);

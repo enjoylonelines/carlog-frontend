@@ -170,8 +170,8 @@ export default function LoginModal({ showLoginModal, setShowLoginModal }) {
   if (!showLoginModal) return null;
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
+    <div className={styles.overlay} onClick={handleCloseModal}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <div className={styles.logo}>
             <span className={styles.logoDot} />

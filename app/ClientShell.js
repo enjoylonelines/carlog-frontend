@@ -57,13 +57,22 @@ function RouteGuard({ children }) {
 
 function Shell({ children }) {
   const [showCreate, setShowCreate] = useState(false);
+  const { userId, setShowLoginModal } = useContext(AuthContext);
+
+  const handleCreateClick = () => {
+    if (!userId) {
+      setShowLoginModal(true);
+      return;
+    }
+    setShowCreate(true);
+  };
 
   return (
     <RouteGuard>
       <NotificationContextProvider>
         <Navbar />
         <main className={styles.main}>{children}</main>
-        <BottomNav onCreateClick={() => setShowCreate(true)} />
+        <BottomNav onCreateClick={handleCreateClick} />
       <TokenExpirationWarning />
         {showCreate && (
           <CreatePost

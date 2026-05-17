@@ -53,7 +53,7 @@ const HeartIcon = ({ filled }) => (
 
 export default function ProfileView() {
   const router = useRouter();
-  const { userId: myUserId, logout } = useContext(AuthContext);
+  const { userId: myUserId, logout, setShowLoginModal, setRedirectUrl } = useContext(AuthContext);
   const [profile, setProfile] = useState(MOCK_PROFILE);
   const [profileImgErr, setProfileImgErr] = useState(false);
   const [posts, setPosts] = useState([]);
@@ -89,6 +89,14 @@ export default function ProfileView() {
     }
     pageRef.current = pageNo;
   }, []);
+
+  useEffect(() => {
+    if (!myUserId) {
+      setRedirectUrl('/profile');
+      setShowLoginModal(true);
+      router.replace('/');
+    }
+  }, [myUserId, router, setShowLoginModal, setRedirectUrl]);
 
   useEffect(() => {
     if (!myUserId) return;
@@ -150,6 +158,8 @@ export default function ProfileView() {
       router.push(`/boards/${boardId}`);
     }
   };
+
+  if (!myUserId) return null;
 
   return (
     <>

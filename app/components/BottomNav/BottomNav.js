@@ -114,9 +114,9 @@ export default function BottomNav({ onCreateClick }) {
   const isDetailPage = pathname.startsWith('/boards/');
 
   const handleNavClick = (e, item) => {
-    if (item.id === 'profile' && !userId) {
+    if ((item.id === 'profile' || item.id === 'notifications') && !userId) {
       e.preventDefault();
-      setRedirectUrl('/profile');
+      setRedirectUrl(item.path);
       setShowLoginModal(true);
     }
   };
