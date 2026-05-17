@@ -71,7 +71,7 @@ export default function BoardDetailPage() {
   const isSubmittingRef = useRef(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [following, setFollowing] = useState(false);
+  const [following, setFollowing] = useState(null);
   const [myUsername, setMyUsername] = useState('');
   const [myProfileImageUrl, setMyProfileImageUrl] = useState(null);
   const [hasMoreComments, setHasMoreComments] = useState(true);
@@ -188,9 +188,16 @@ export default function BoardDetailPage() {
 
   useEffect(() => {
     if (!boardUserId || isOwner) return;
+    if (followCache[boardUserId] !== undefined) {
+      setFollowing(followCache[boardUserId]);
+      return;
+    }
     let cancelled = false;
     checkFollow({ userId: MY_USER_ID, targetId: boardUserId }).then((isFollowing) => {
-      if (!cancelled) setFollowing(isFollowing);
+      if (!cancelled) {
+        followCache[boardUserId] = isFollowing;
+        setFollowing(isFollowing);
+      }
     });
     return () => {
       cancelled = true;
@@ -610,7 +617,7 @@ export default function BoardDetailPage() {
               <span className={styles.authorName}>{board.username || `user${board.userId}`}</span>
               <span className={styles.postTime}>{timeAgo(board.createdDate)}</span>
             </div>
-            {!isOwner && (
+            {!isOwner && following !== null && (
               <button className={`${styles.followBtn} ${following ? styles.following : ''}`} onClick={handleFollow}>
                 {following ? '팔로잉' : '팔로우'}
               </button>
