@@ -78,7 +78,8 @@ export default function BoardDetailPage() {
   const [totalCommentCount, setTotalCommentCount] = useState(0);
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(0);
-  const likePendingRef = useRef(false);
+  const likeDebounceRef = useRef(null);
+  const likeTargetRef = useRef(null);
 
   const nextCursorRef = useRef(null);
   const isLoadingCommentsRef = useRef(false);
@@ -206,31 +207,31 @@ export default function BoardDetailPage() {
       await unfollowUser({ userId: MY_USER_ID, targetId: board.userId });
     }
   };
-  const handleLike = async () => {
-    if (likePendingRef.current) return;
-    likePendingRef.current = true;
-
+  const handleLike = () => {
     const nextLiked = !liked;
     const nextLikes = nextLiked ? likes + 1 : likes - 1;
     setLiked(nextLiked);
     setLikes(nextLikes);
+    likeTargetRef.current = nextLiked;
     likeCache[boardId] = { liked: nextLiked, likes: nextLikes };
 
-    try {
-      const res = nextLiked ? await createLike(boardId) : await deleteLike(boardId);
-      if (res) {
-        setLiked(res.isLiked === 1);
-        setLikes(res.likeCount);
-        likeCache[boardId] = { liked: res.isLiked === 1, likes: res.likeCount };
+    clearTimeout(likeDebounceRef.current);
+    likeDebounceRef.current = setTimeout(async () => {
+      const targetLiked = likeTargetRef.current;
+      try {
+        const res = targetLiked ? await createLike(boardId) : await deleteLike(boardId);
+        if (res) {
+          setLiked(res.isLiked === 1);
+          setLikes(res.likeCount);
+          likeCache[boardId] = { liked: res.isLiked === 1, likes: res.likeCount };
+        }
+      } catch (err) {
+        console.error('좋아요 처리 실패', err);
+        setLiked(!targetLiked);
+        setLikes(nextLikes + (targetLiked ? -1 : 1));
+        likeCache[boardId] = { liked: !targetLiked, likes: nextLikes + (targetLiked ? -1 : 1) };
       }
-    } catch (err) {
-      console.error('좋아요 처리 실패', err);
-      setLiked(!nextLiked);
-      setLikes(likes);
-      likeCache[boardId] = { liked: !nextLiked, likes };
-    } finally {
-      likePendingRef.current = false;
-    }
+    }, 600);
   };
 
   useEffect(() => {

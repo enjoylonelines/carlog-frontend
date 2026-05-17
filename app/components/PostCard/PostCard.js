@@ -5,7 +5,7 @@ import styles from './PostCard.module.css';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { checkFollow, followUser, unfollowUser, increaseBoardHit } from '../../../api';
 import { avatarColor as getAvatarColor } from '../../utils/avatar';
-import { followCache } from '../../utils/followCache';
+import { followCache, emitFollowEvent } from '../../utils/followCache';
 import { likeCache } from '../../utils/likeCache';
 import { isMediaSrc, toMediaSrc, useBackupImageOnError, useFetchedImage } from '../../utils/mediaFallback';
 import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
@@ -91,7 +91,8 @@ export default function PostCard({ post }) {
     });
   }
 
-  const likePendingRef = useRef(false);
+  const likeDebounceRef = useRef(null);
+  const likeTargetRef = useRef(null);
 
   useEffect(() => {
     if (!MY_USER_ID) return;
@@ -115,8 +116,10 @@ export default function PostCard({ post }) {
     setFollowing(next);
     followCache[userId] = next;
     if (next) {
+      emitFollowEvent({ type: 'follow', targetId: userId, username, profileImageUrl });
       await followUser({ userId: MY_USER_ID, targetId: userId });
     } else {
+      emitFollowEvent({ type: 'unfollow', targetId: userId });
       await unfollowUser({ userId: MY_USER_ID, targetId: userId });
     }
   };
@@ -140,34 +143,43 @@ export default function PostCard({ post }) {
     setCurrentMediaIndex(nextIndex);
   };
 
-  const handleLike = async (e) => {
+  const handleLike = (e) => {
     e.stopPropagation();
     if (!MY_USER_ID) {
       setShowLoginModal(true);
       return;
     }
-    if (likePendingRef.current) return;
-    likePendingRef.current = true;
 
-    const nextLiked = !liked;
-    const nextLikes = nextLiked ? likes + 1 : likes - 1;
-    setLikeState((prev) => ({ ...prev, liked: nextLiked, likes: nextLikes }));
-    likeCache[boardId] = { liked: nextLiked, likes: nextLikes };
+    // UI 즉시 토글 (functional update로 연속 클릭도 정확히 반영)
+    setLikeState((prev) => {
+      const nextLiked = !prev.liked;
+      const nextLikes = nextLiked ? prev.likes + 1 : prev.likes - 1;
+      likeTargetRef.current = nextLiked;
+      likeCache[boardId] = { liked: nextLiked, likes: nextLikes };
+      return { ...prev, liked: nextLiked, likes: nextLikes };
+    });
 
-    try {
-      const res = nextLiked ? await createLike(boardId) : await deleteLike(boardId);
-      if (res) {
-        const confirmed = { liked: (res.isLiked ?? 0) === 1, likes: res.likeCount ?? nextLikes };
-        setLikeState((prev) => ({ ...prev, ...confirmed }));
-        likeCache[boardId] = confirmed;
+    // 마지막 클릭 600ms 후 API 1회 호출
+    clearTimeout(likeDebounceRef.current);
+    likeDebounceRef.current = setTimeout(async () => {
+      const targetLiked = likeTargetRef.current;
+      try {
+        const res = targetLiked ? await createLike(boardId) : await deleteLike(boardId);
+        if (res) {
+          const confirmed = { liked: (res.isLiked ?? 0) === 1, likes: res.likeCount ?? 0 };
+          setLikeState((prev) => ({ ...prev, ...confirmed }));
+          likeCache[boardId] = confirmed;
+        }
+      } catch (err) {
+        console.error('좋아요 처리 실패', err);
+        setLikeState((prev) => {
+          const revertLiked = !targetLiked;
+          const revertLikes = revertLiked ? prev.likes + 1 : prev.likes - 1;
+          likeCache[boardId] = { liked: revertLiked, likes: revertLikes };
+          return { ...prev, liked: revertLiked, likes: revertLikes };
+        });
       }
-    } catch (err) {
-      console.error('좋아요 처리 실패', err);
-      setLikeState((prev) => ({ ...prev, liked: !nextLiked, likes: likes }));
-      likeCache[boardId] = { liked: !nextLiked, likes };
-    } finally {
-      likePendingRef.current = false;
-    }
+    }, 600);
   };
 
   const openBoard = async () => {

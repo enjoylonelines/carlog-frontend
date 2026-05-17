@@ -35,6 +35,8 @@ function AuthContextProvider({ children }) {
     const [showLoginModal, setShowLoginModal] = useState(false);
     // 로그인 후 리다이렉트할 URL
     const [redirectUrl, setRedirectUrl] = useState(null);
+    // 헤더에 표시할 프로필 이미지 URL (프로필 편집 시 즉시 반영)
+    const [navProfileImageUrl, setNavProfileImageUrl] = useState(null);
     const warnTimerRef = useRef(null);
     const expireTimerRef = useRef(null);
 
@@ -46,6 +48,7 @@ function AuthContextProvider({ children }) {
         setTokenExpiresAt(null);
         setShowExpiryWarning(false);
         setRedirectUrl(null);
+        setNavProfileImageUrl(null);
         // 로컬 스토리지 클리어
         localStorage.removeItem('user');
         localStorage.removeItem('accessToken');
@@ -70,6 +73,8 @@ function AuthContextProvider({ children }) {
     redirectUrl,
     setRedirectUrl,
     logout,
+    navProfileImageUrl,
+    setNavProfileImageUrl,
   };
 
   // 브라우저가 리프레쉬되었을 때(애플리케이션이 다시 시작할때) 실행되는 자동 콜백 함수 등록
