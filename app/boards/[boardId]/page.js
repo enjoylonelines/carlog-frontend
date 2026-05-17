@@ -251,6 +251,17 @@ export default function BoardDetailPage() {
     setCurrentMediaIndex(nextIndex);
   };
 
+  const openAuthorProfile = () => {
+    if (!board?.userId) return;
+    router.push(board.userId === MY_USER_ID ? '/profile' : `/users/${board.userId}`);
+  };
+
+  const handleAuthorKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      openAuthorProfile();
+    }
+  };
+
   const handleDelete = async () => {
     await deleteBoard(boardId);
     deleteNotificationsByBoard(boardId);
@@ -516,14 +527,28 @@ export default function BoardDetailPage() {
         <div className={styles.content}>
           {/* 작성자 정보 */}
           <div className={styles.authorRow}>
-            <Avatar
-              userId={board.userId}
-              username={board.username}
-              profileImageUrl={board.profileImageUrl}
-              className={styles.avatar}
-              size={40}
-            />
-            <div className={styles.authorMeta}>
+            <div
+              className={styles.authorAvatarWrap}
+              onClick={openAuthorProfile}
+              role="button"
+              tabIndex={0}
+              onKeyDown={handleAuthorKeyDown}
+            >
+              <Avatar
+                userId={board.userId}
+                username={board.username}
+                profileImageUrl={board.profileImageUrl}
+                className={styles.avatar}
+                size={40}
+              />
+            </div>
+            <div
+              className={styles.authorMeta}
+              onClick={openAuthorProfile}
+              role="button"
+              tabIndex={0}
+              onKeyDown={handleAuthorKeyDown}
+            >
               <span className={styles.authorName}>{board.username || `user${board.userId}`}</span>
               <span className={styles.postTime}>{timeAgo(board.createdDate)}</span>
             </div>
