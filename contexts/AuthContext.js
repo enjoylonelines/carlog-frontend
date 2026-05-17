@@ -46,6 +46,12 @@ function AuthContextProvider({ children }) {
         setTokenExpiresAt(null);
         setShowExpiryWarning(false);
         setRedirectUrl(null);
+        // 로컬 스토리지 클리어
+        localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('userId');
+        // Axios 헤더에서 인증 정보 제거
+        removeAuthHeader();
     }, []);
 
   // Context를 통해서 제공할 전역 객체

@@ -31,7 +31,7 @@ function timeAgo(dateStr) {
 
 export default function PostCard({ post }) {
   const router = useRouter();
-  const { userId: MY_USER_ID } = useContext(AuthContext);
+  const { userId: MY_USER_ID, setShowLoginModal, setRedirectUrl } = useContext(AuthContext);
   const [expanded, setExpanded] = useState(false);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const mediaListRef = useRef(null);
@@ -162,10 +162,29 @@ export default function PostCard({ post }) {
   };
 
   const openBoard = async () => {
+    if (!MY_USER_ID) {
+      setRedirectUrl(`/boards/${boardId}`);
+      setShowLoginModal(true);
+      return;
+    }
     try {
       await increaseBoardHit(boardId);
       markBoardViewed(boardId);
     } finally {
+      router.push(`/boards/${boardId}`);
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+  };
+
+  const goToBoard = async () => {
+    try {
+      await increaseBoardHit(boardId);
+      markBoardViewed(boardId);
+    } finally {
+      closeModal();
       router.push(`/boards/${boardId}`);
     }
   };
@@ -203,7 +222,7 @@ export default function PostCard({ post }) {
           <span className={styles.username}>{username || '알 수 없음'}</span>
           <span className={styles.time}>{timeAgo(createdAt)}</span>
         </div>
-        {!isOwnPost && following !== null && (
+        {MY_USER_ID && !isOwnPost && following !== null && (
           <button className={`${styles.followBtn} ${following ? styles.following : ''}`} onClick={handleFollow}>
             {following ? '팔로잉' : '팔로우'}
           </button>
@@ -316,19 +335,21 @@ export default function PostCard({ post }) {
 
           <div className={styles.stats}>
             {/* 좋아요 버튼  */}
-            <button className={styles.stat} onClick={handleLike}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill={liked ? '#ef4444' : 'none'}
-                stroke={liked ? '#ef4444' : 'currentColor'}
-                strokeWidth="2"
-              >
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-              {likes.toLocaleString()}
-            </button>
+            {MY_USER_ID && (
+              <button className={styles.stat} onClick={handleLike}>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill={liked ? '#ef4444' : 'none'}
+                  stroke={liked ? '#ef4444' : 'currentColor'}
+                  strokeWidth="2"
+                >
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                {likes.toLocaleString()}
+              </button>
+            )}
             <span className={styles.stat}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
