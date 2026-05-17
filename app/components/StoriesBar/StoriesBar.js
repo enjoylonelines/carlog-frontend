@@ -5,8 +5,12 @@ import { AuthContext } from '@/contexts/AuthContext';
 import { NotificationContext } from '@/contexts/NotificationContext';
 import { getFollowings, increaseBoardHit } from '@/api';
 import { avatarColor } from '@/app/utils/avatar';
+import { onFollowEvent } from '@/app/utils/followCache';
 import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
 import styles from './StoriesBar.module.css';
+
+// 세션 내 읽은 스토리 기록 — 컴포넌트 재마운트 후에도 유지
+const viewedStoryIds = new Set();
 
 const NEW_POST_TYPES = new Set(['NEW_POST', 'POST', 'BOARD']);
 
@@ -19,6 +23,7 @@ export default function StoriesBar() {
   const { items, markReadBySenderAndType } = useContext(NotificationContext);
   const router = useRouter();
   const [followings, setFollowings] = useState([]);
+  const [viewedVersion, setViewedVersion] = useState(0);
 
   useEffect(() => {
     if (!userId) return;
@@ -26,6 +31,20 @@ export default function StoriesBar() {
       if (Array.isArray(data)) setFollowings(data);
     });
   }, [userId]);
+
+  // 팔로우/언팔로우 이벤트 수신 → 스토리 목록 즉시 반영
+  useEffect(() => {
+    return onFollowEvent(({ type, targetId, username, profileImageUrl }) => {
+      if (type === 'follow') {
+        setFollowings((prev) => {
+          if (prev.some((f) => f.targetId === targetId)) return prev;
+          return [...prev, { targetId, username, profileImageUrl }];
+        });
+      } else {
+        setFollowings((prev) => prev.filter((f) => f.targetId !== targetId));
+      }
+    });
+  }, []);
 
   // 팔로잉한 사람이 보낸 읽지 않은 새 게시물 알림에서 senderId → { boardId, notifId }
   const activeBoardMap = useMemo(() => {
@@ -45,14 +64,16 @@ export default function StoriesBar() {
     return map;
   }, [items, followings]);
 
-  // 활성(미읽음) 앞으로 정렬
+  // 활성(미읽음) 앞, 읽은 것 뒤, 나머지 중간
   const sorted = useMemo(() => {
-    return [...followings].sort((a, b) => {
-      const aActive = a.targetId in activeBoardMap ? 1 : 0;
-      const bActive = b.targetId in activeBoardMap ? 1 : 0;
-      return bActive - aActive;
-    });
-  }, [followings, activeBoardMap]);
+    const score = (user) => {
+      if (user.targetId in activeBoardMap) return 2;
+      if (viewedStoryIds.has(user.targetId)) return 0;
+      return 1;
+    };
+    return [...followings].sort((a, b) => score(b) - score(a));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [followings, activeBoardMap, viewedVersion]);
 
   if (!userId || sorted.length === 0) return null;
 
@@ -78,6 +99,8 @@ export default function StoriesBar() {
               className={styles.story}
               onClick={() => {
                 if (active) {
+                  viewedStoryIds.add(user.targetId);
+                  setViewedVersion((v) => v + 1);
                   markReadBySenderAndType(user.targetId, 'NEW_POST');
                   openBoard(active.boardId);
                 } else {

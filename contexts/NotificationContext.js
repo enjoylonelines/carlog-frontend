@@ -49,7 +49,16 @@ export default function NotificationContextProvider({ children }) {
   useEffect(() => {
     if (!userId) return;
     const es = subscribeNotifications(userId, (newNotif) => {
-      setItems((prev) => [toItem(newNotif), ...prev]);
+      setItems((prev) => {
+        // LIKE는 같은 sender+board의 기존 항목을 교체 (중복 방지)
+        let base = prev;
+        if (newNotif.type === 'LIKE' && newNotif.boardId) {
+          base = prev.filter(
+            (n) => !(n.type === 'LIKE' && n.boardId === newNotif.boardId && n.senderId === newNotif.senderId),
+          );
+        }
+        return [toItem(newNotif), ...base];
+      });
     });
     return () => es.close();
   }, [userId]);
