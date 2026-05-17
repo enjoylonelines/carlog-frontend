@@ -1,21 +1,36 @@
 'use client';
 import { useState, useRef } from 'react';
 import { updateUserProfile, uploadProfileImage } from '../../../api';
+import { useFetchedImage } from '../../utils/mediaFallback';
 import styles from './ProfileEditModal.module.css';
+
+function ProfileImagePreview({ serverUrl, localBlobUrl, fallbackChar, fallbackColor, className }) {
+  const fetched = useFetchedImage(localBlobUrl ? null : serverUrl);
+  if (localBlobUrl) {
+    return <img src={localBlobUrl} alt="프로필" className={className} />;
+  }
+  if (!serverUrl) return null;
+  if (fetched === null) return <div className="imgSkeleton" style={{ borderRadius: '50%' }}><span className="imgSkeletonIcon" /></div>;
+  if (fetched === 'ERROR') return (
+    <div className={styles.avatar} style={{ background: fallbackColor }}>{fallbackChar}</div>
+  );
+  return <img src={fetched} alt="프로필" className={className} />;
+}
 
 export default function ProfileEditModal({ profile, userId, onClose, onSaved }) {
   const [username, setUsername] = useState(profile.username || '');
   const [bio, setBio] = useState(profile.bio || '');
   const [imageFile, setImageFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(profile.profileImageUrl || null);
+  const [localBlobUrl, setLocalBlobUrl] = useState(null);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (localBlobUrl) URL.revokeObjectURL(localBlobUrl);
     setImageFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    setLocalBlobUrl(URL.createObjectURL(file));
   };
 
   const handleSave = async () => {
@@ -60,8 +75,14 @@ export default function ProfileEditModal({ profile, userId, onClose, onSaved }) 
 
         <div className={styles.avatarRow}>
           <button className={styles.avatarWrap} onClick={() => fileInputRef.current?.click()}>
-            {previewUrl ? (
-              <img src={previewUrl} alt="프로필" className={styles.avatarImg} />
+            {(localBlobUrl || profile.profileImageUrl) ? (
+              <ProfileImagePreview
+                serverUrl={profile.profileImageUrl}
+                localBlobUrl={localBlobUrl}
+                fallbackChar={(username || 'U')[0].toUpperCase()}
+                fallbackColor={profile.avatarColor}
+                className={styles.avatarImg}
+              />
             ) : (
               <div className={styles.avatar} style={{ background: profile.avatarColor }}>
                 {(username || 'U')[0].toUpperCase()}

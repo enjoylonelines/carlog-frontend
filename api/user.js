@@ -18,7 +18,9 @@ export const updateUserProfile = async (userId, { username, bio, profileImageUrl
 export const uploadProfileImage = async (userId, file) => {
   const formData = new FormData();
   formData.append('image', file);
-  const res = await client.post(`/api/users/${userId}/profile-image`, formData);
+  const res = await client.post(`/api/users/${userId}/profile-image`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return res?.data?.profileImageUrl ?? null;
 };
 
