@@ -10,6 +10,7 @@ import { avatarColor } from '../../utils/avatar';
 import { NotificationContext } from '../../../contexts/NotificationContext';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { getUserProfile } from '../../../api/user';
+import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
 
 export default function Navbar() {
   const router = useRouter();
@@ -175,21 +176,12 @@ export default function Navbar() {
             </span>
           </Link>
           <Link href="/profile" className={styles.profileBtn} title="프로필" onClick={handleProfileClick}>
-            {profileImageUrl && !imgError ? (
-              <img
-                src={toAbsUrl(profileImageUrl)}
-                alt={username}
-                className={styles.profileImg}
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <div
-                className={styles.profileFallback}
-                style={{ background: avatarColor(userId) }}
-              >
-                {username ? username[0].toUpperCase() : '?'}
-              </div>
-            )}
+            <FetchedAvatar
+              src={profileImageUrl}
+              fallbackChar={username ? username[0].toUpperCase() : '?'}
+              fallbackColor={avatarColor(userId)}
+              className={styles.profileImg}
+            />
           </Link>
         </div>
       </div>

@@ -21,6 +21,7 @@ import {
 import { avatarColor } from '../../utils/avatar';
 import { BOARD_DELETED_EVENT, markFeedStale } from '../../utils/feedRefresh';
 import { useFetchedImage } from '../../utils/mediaFallback';
+import FetchedAvatar from '../../components/FetchedAvatar/FetchedAvatar';
 import { NotificationContext } from '../../../contexts/NotificationContext';
 import { likeCache } from '../../utils/likeCache';
 import { followCache } from '../../utils/followCache';
@@ -34,23 +35,15 @@ function FetchedImage({ url, alt, className }) {
 }
 
 function Avatar({ userId, username, profileImageUrl, className }) {
-  const [errSrc, setErrSrc] = useState(null);
   const color = avatarColor(userId);
   const label = (username || 'U')[0].toUpperCase();
-  if (profileImageUrl && profileImageUrl !== errSrc) {
-    return (
-      <img
-        src={toAbsUrl(profileImageUrl)}
-        alt={username || ''}
-        className={className}
-        onError={() => setErrSrc(profileImageUrl)}
-      />
-    );
-  }
   return (
-    <div className={className} style={{ background: color }}>
-      {label}
-    </div>
+    <FetchedAvatar
+      src={profileImageUrl}
+      fallbackChar={label}
+      fallbackColor={color}
+      className={className}
+    />
   );
 }
 

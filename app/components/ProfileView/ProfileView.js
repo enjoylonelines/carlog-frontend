@@ -3,29 +3,18 @@ import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { getUserProfile, searchBoards, increaseBoardHit } from '../../../api';
-import { toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
-const toAbsUrl = (url) => (url && url.startsWith('/') ? `${API_BASE}${url}` : url);
+import { useFetchedImage } from '../../utils/mediaFallback';
 import { getLikedBoards } from '../../../api/like';
 import ProfileEditModal from '../ProfileEditModal/ProfileEditModal';
+import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
 import styles from './ProfileView.module.css';
-
-const isSrc = (url) => !!url && (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://'));
 
 let _savedTab = 'posts';
 
-function GridImage({ src, backupSrc, className }) {
-  const imgSrc = isSrc(src) ? toMediaSrc(src) : '/no-image.svg';
-  return (
-    <img
-      src={imgSrc}
-      alt=""
-      className={className}
-      onError={(e) => {
-        useBackupImageOnError(e, backupSrc);
-      }}
-    />
-  );
+function GridImage({ src, className }) {
+  const fetched = useFetchedImage(src || null);
+  if (fetched === null) return <div className="imgSkeleton"><span className="imgSkeletonIcon" /></div>;
+  return <img src={fetched === 'ERROR' ? '/no-image.svg' : fetched} alt="" className={className} />;
 }
 
 const GridIcon = () => (
@@ -54,7 +43,6 @@ export default function ProfileView() {
   const router = useRouter();
   const { userId: myUserId, logout, setShowLoginModal, setRedirectUrl } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
-  const [profileImgErr, setProfileImgErr] = useState(false);
   const [posts, setPosts] = useState([]);
   const [showEdit, setShowEdit] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
@@ -106,7 +94,6 @@ export default function ProfileView() {
           ...data,
           username: data.username || prev.username,
         }));
-        setProfileImgErr(false);
       }
     });
     pageRef.current = 1;
@@ -175,7 +162,6 @@ export default function ProfileView() {
           onClose={() => setShowEdit(false)}
           onSaved={(updated) => {
             setProfile((prev) => ({ ...prev, ...updated }));
-            setProfileImgErr(false);
           }}
         />
       )}
@@ -206,18 +192,12 @@ export default function ProfileView() {
               </div>
             )}
           </div>
-          {isSrc(profile.profileImageUrl) && !profileImgErr ? (
-            <img
-              src={toAbsUrl(profile.profileImageUrl)}
-              alt="프로필"
-              className={styles.avatarLg}
-              onError={() => setProfileImgErr(true)}
-            />
-          ) : (
-            <div className={styles.avatarLg} style={{ background: profile.avatarColor }}>
-              {(profile.username || '?')[0].toUpperCase()}
-            </div>
-          )}
+          <FetchedAvatar
+            src={profile.profileImageUrl}
+            fallbackChar={(profile.username || '?')[0].toUpperCase()}
+            fallbackColor={profile.avatarColor}
+            className={styles.avatarLg}
+          />
           <div className={styles.infoCol}>
             <div className={styles.username}>{profile.username}</div>
             <div className={styles.stats}>
@@ -294,7 +274,7 @@ export default function ProfileView() {
               <div className={styles.grid}>
                 {posts.map((post) => (
                   <button key={post.boardId} className={styles.cell} onClick={() => openBoard(post.boardId)}>
-                    <GridImage src={post.mediaUrls?.[0]} backupSrc={post.mediaBackupUrls?.[0]} className={styles.img} />
+                    <GridImage src={post.mediaUrls?.[0]} className={styles.img} />
                   </button>
                 ))}
               </div>
@@ -311,7 +291,7 @@ export default function ProfileView() {
               <div className={styles.grid}>
                 {likedPosts.map((post) => (
                   <button key={post.boardId} className={styles.cell} onClick={() => openBoard(post.boardId)}>
-                    <GridImage src={post.mediaUrl} backupSrc={post.mediaBackupUrls?.[0]} className={styles.img} />
+                    <GridImage src={post.mediaUrl} className={styles.img} />
                   </button>
                 ))}
               </div>

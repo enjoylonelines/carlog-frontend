@@ -5,17 +5,17 @@ import { NotificationContext } from '../../../contexts/NotificationContext';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { increaseBoardHit } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
+import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
 import styles from './NotificationsView.module.css';
 
 function NotifAvatar({ src, fallbackColor, username }) {
-  const [errSrc, setErrSrc] = useState(null);
-  if (src && src !== errSrc) {
-    return <img src={src} alt={username} className={styles.avatarImg} onError={() => setErrSrc(src)} />;
-  }
   return (
-    <div className={styles.avatar} style={{ background: fallbackColor }}>
-      {username[0].toUpperCase()}
-    </div>
+    <FetchedAvatar
+      src={src}
+      fallbackChar={username[0].toUpperCase()}
+      fallbackColor={fallbackColor}
+      className={styles.avatarImg}
+    />
   );
 }
 

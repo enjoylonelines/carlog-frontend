@@ -8,6 +8,7 @@ import { avatarColor as getAvatarColor } from '../../utils/avatar';
 import { followCache } from '../../utils/followCache';
 import { likeCache } from '../../utils/likeCache';
 import { isMediaSrc, toMediaSrc, useBackupImageOnError, useFetchedImage } from '../../utils/mediaFallback';
+import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
 import { markBoardViewed } from '../../utils/feedRefresh';
 import { createLike, deleteLike } from '@/api/like';
 
@@ -65,7 +66,6 @@ export default function PostCard({ post }) {
   const isLong = content && content.length > 80;
   const isOwnPost = userId === MY_USER_ID;
 
-  const [avatarErrSrc, setAvatarErrSrc] = useState(null);
 
   // null = 로딩 중, true/false = 확정
   const [following, setFollowing] = useState(() => followCache[userId] ?? null);
@@ -208,18 +208,12 @@ export default function PostCard({ post }) {
           tabIndex={0}
           onKeyDown={(e) => e.key === 'Enter' && router.push(userId === MY_USER_ID ? '/profile' : `/users/${userId}`)}
         >
-          {isMediaSrc(profileImageUrl) && profileImageUrl !== avatarErrSrc ? (
-            <img
-              src={toAbsUrl(profileImageUrl)}
-              alt={username}
-              className={styles.avatarImg}
-              onError={() => setAvatarErrSrc(profileImageUrl)}
-            />
-          ) : (
-            <div className={styles.avatar} style={{ background: color }}>
-              {(username || 'U')[0].toUpperCase()}
-            </div>
-          )}
+          <FetchedAvatar
+            src={profileImageUrl}
+            fallbackChar={(username || 'U')[0].toUpperCase()}
+            fallbackColor={color}
+            className={styles.avatarImg}
+          />
         </div>
         <div
           className={styles.meta}

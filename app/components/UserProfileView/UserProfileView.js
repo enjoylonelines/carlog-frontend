@@ -7,7 +7,7 @@ import { searchBoards } from '../../../api';
 import client from '../../../api/client';
 import { avatarColor } from '../../utils/avatar';
 import { followCache } from '../../utils/followCache';
-import { toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
+import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
 import styles from './UserProfileView.module.css';
 
 export default function UserProfileView({ userId }) {
@@ -17,7 +17,6 @@ export default function UserProfileView({ userId }) {
   const [following, setFollowing] = useState(() => followCache[userId] ?? null);
   const [followLoading, setFollowLoading] = useState(false);
   const [posts, setPosts] = useState([]);
-  const [avatarErr, setAvatarErr] = useState(false);
 
   useEffect(() => {
     if (userId === MY_USER_ID) {
@@ -116,13 +115,12 @@ export default function UserProfileView({ userId }) {
       </div>
 
       <div className={styles.header}>
-        {profile.profileImageUrl && !avatarErr ? (
-          <img src={profile.profileImageUrl} alt="" className={styles.avatarLg} onError={() => setAvatarErr(true)} />
-        ) : (
-          <div className={styles.avatarLg} style={{ background: color }}>
-            {initial}
-          </div>
-        )}
+        <FetchedAvatar
+          src={profile.profileImageUrl}
+          fallbackChar={initial}
+          fallbackColor={color}
+          className={styles.avatarLg}
+        />
         <div className={styles.infoCol}>
           <div className={styles.username}>{profile.username}</div>
           <div className={styles.stats}>

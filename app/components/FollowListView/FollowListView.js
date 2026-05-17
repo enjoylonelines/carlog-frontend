@@ -4,18 +4,11 @@ import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { getFollowers, getFollowings } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
+import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
 import styles from './FollowListView.module.css';
 
 function FollowAvatar({ src, color, initial }) {
-  const [errSrc, setErrSrc] = useState(null);
-  if (src && src !== errSrc) {
-    return <img src={src} alt="" className={styles.avatar} onError={() => setErrSrc(src)} />;
-  }
-  return (
-    <div className={styles.avatar} style={{ background: color }}>
-      {initial}
-    </div>
-  );
+  return <FetchedAvatar src={src} fallbackChar={initial} fallbackColor={color} className={styles.avatar} />;
 }
 
 export default function FollowListView({ initialTab = 'followers', userId: userIdProp }) {

@@ -5,31 +5,13 @@ import { AuthContext } from '@/contexts/AuthContext';
 import { NotificationContext } from '@/contexts/NotificationContext';
 import { getFollowings, increaseBoardHit } from '@/api';
 import { avatarColor } from '@/app/utils/avatar';
+import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
 import styles from './StoriesBar.module.css';
 
-// 백엔드 새 게시물 알림 type 값에 맞게 조정
 const NEW_POST_TYPES = new Set(['NEW_POST', 'POST', 'BOARD']);
 
-
-const isSrc = (url) => !!url && (url.startsWith('/') || url.startsWith('http'));
-
 function StoryAvatar({ src, color, initial }) {
-  const [errSrc, setErrSrc] = useState(null);
-  if (src && src !== errSrc) {
-    return (
-      <img
-        src={src}
-        alt=""
-        className={styles.avatar}
-        onError={() => setErrSrc(src)}
-      />
-    );
-  }
-  return (
-    <div className={styles.avatar} style={{ background: color }}>
-      {initial}
-    </div>
-  );
+  return <FetchedAvatar src={src} fallbackChar={initial} fallbackColor={color} className={styles.avatar} />;
 }
 
 export default function StoriesBar() {
@@ -105,7 +87,7 @@ export default function StoriesBar() {
             >
               <div className={`${styles.ring} ${active ? styles.ringActive : ''}`}>
                 <StoryAvatar
-                  src={isSrc(user.profileImageUrl) ? user.profileImageUrl : null}
+                  src={user.profileImageUrl}
                   color={color}
                   initial={initial}
                 />
