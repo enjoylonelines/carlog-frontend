@@ -93,6 +93,8 @@ export default function BoardDetailPage() {
   const [repliesCache, setRepliesCache] = useState({});
   const [loadingReplies, setLoadingReplies] = useState(new Set());
   const [loadedReplyParents, setLoadedReplyParents] = useState(new Set());
+  const [replyPagination, setReplyPagination] = useState({});
+  const [loadingMoreReplies, setLoadingMoreReplies] = useState(new Set());
 
   const commentInputRef = useRef(null);
   const mediaListRef = useRef(null);
@@ -158,6 +160,8 @@ export default function BoardDetailPage() {
       setExpandedReplies(new Set());
       setRepliesCache({});
       setLoadedReplyParents(new Set());
+      setReplyPagination({});
+      setLoadingMoreReplies(new Set());
       nextCursorRef.current = commentData.nextCursor ?? null;
       setCurrentMediaIndex(0);
       setLoading(false);
@@ -339,13 +343,20 @@ export default function BoardDetailPage() {
           setLoadedReplyParents((prev) => new Set(prev).add(parentId));
         } else {
           setLoadingReplies((prev) => new Set([...prev, parentId]));
-          const existingReplies = await getReplies(boardId, parentId);
+          const replyData = await getReplies(boardId, parentId);
           setRepliesCache((prev) => ({
             ...prev,
             [parentId]: mergeReplies(prev[parentId], [
-              ...(Array.isArray(existingReplies) ? existingReplies : []),
+              ...(Array.isArray(replyData?.comments) ? replyData.comments : []),
               newEntry,
             ]),
+          }));
+          setReplyPagination((prev) => ({
+            ...prev,
+            [parentId]: {
+              hasNext: Boolean(replyData?.hasNext),
+              nextCursor: replyData?.nextCursor ?? null,
+            },
           }));
           setLoadingReplies((prev) => {
             const next = new Set(prev);
@@ -421,7 +432,14 @@ export default function BoardDetailPage() {
       const data = await getReplies(boardId, commentId);
       setRepliesCache((prev) => ({
         ...prev,
-        [commentId]: mergeReplies(prev[commentId], Array.isArray(data) ? data : []),
+        [commentId]: mergeReplies(prev[commentId], Array.isArray(data?.comments) ? data.comments : []),
+      }));
+      setReplyPagination((prev) => ({
+        ...prev,
+        [commentId]: {
+          hasNext: Boolean(data?.hasNext),
+          nextCursor: data?.nextCursor ?? null,
+        },
       }));
       setLoadingReplies((prev) => {
         const next = new Set(prev);
@@ -432,6 +450,33 @@ export default function BoardDetailPage() {
     }
 
     setExpandedReplies((prev) => new Set([...prev, commentId]));
+  };
+
+  const handleLoadMoreReplies = async (commentId) => {
+    const pageInfo = replyPagination[commentId];
+    if (!pageInfo?.hasNext || !pageInfo?.nextCursor || loadingMoreReplies.has(commentId)) return;
+
+    setLoadingMoreReplies((prev) => new Set([...prev, commentId]));
+    try {
+      const data = await getReplies(boardId, commentId, pageInfo.nextCursor);
+      setRepliesCache((prev) => ({
+        ...prev,
+        [commentId]: mergeReplies(prev[commentId], Array.isArray(data?.comments) ? data.comments : []),
+      }));
+      setReplyPagination((prev) => ({
+        ...prev,
+        [commentId]: {
+          hasNext: Boolean(data?.hasNext),
+          nextCursor: data?.nextCursor ?? null,
+        },
+      }));
+    } finally {
+      setLoadingMoreReplies((prev) => {
+        const next = new Set(prev);
+        next.delete(commentId);
+        return next;
+      });
+    }
   };
 
   const startReply = (comment) => {
@@ -774,6 +819,15 @@ export default function BoardDetailPage() {
                           </div>
                         </div>
                       ))}
+                      {replyPagination[c.commentId]?.hasNext && (
+                        <button
+                          className={styles.toggleRepliesBtn}
+                          onClick={() => handleLoadMoreReplies(c.commentId)}
+                          disabled={loadingMoreReplies.has(c.commentId)}
+                        >
+                          {loadingMoreReplies.has(c.commentId) ? '답글 불러오는 중...' : '답글 더보기'}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

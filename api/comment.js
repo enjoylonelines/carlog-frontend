@@ -7,9 +7,11 @@ export const getComments = async (boardId, lastCommentId = null) => {
   return res?.data ?? { comments: [], hasNext: false, nextCursor: null };
 };
 
-export const getReplies = async (boardId, parentCommentId) => {
-  const res = await client.get('/api/comments', { params: { boardId, parentCommentId } });
-  return res?.data?.comments ?? [];
+export const getReplies = async (boardId, parentCommentId, lastCommentId = null) => {
+  const params = { boardId, parentCommentId };
+  if (lastCommentId) params.lastCommentId = lastCommentId;
+  const res = await client.get('/api/comments', { params });
+  return res?.data ?? { comments: [], hasNext: false, nextCursor: null };
 };
 
 export const createComment = async ({ boardId, content, parentCommentId = null }) => {
