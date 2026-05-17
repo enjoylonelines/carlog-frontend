@@ -41,7 +41,7 @@ const HeartIcon = ({ filled }) => (
 
 export default function ProfileView() {
   const router = useRouter();
-  const { userId: myUserId, logout, setShowLoginModal, setRedirectUrl } = useContext(AuthContext);
+  const { userId: myUserId, logout, setShowLoginModal, setRedirectUrl, setNavProfileImageUrl } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [showEdit, setShowEdit] = useState(false);
@@ -162,6 +162,9 @@ export default function ProfileView() {
           onClose={() => setShowEdit(false)}
           onSaved={(updated) => {
             setProfile((prev) => ({ ...prev, ...updated }));
+            if (updated.profileImageUrl !== undefined) {
+              setNavProfileImageUrl(updated.profileImageUrl ?? null);
+            }
           }}
         />
       )}

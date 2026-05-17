@@ -3,8 +3,6 @@ import { useState, useRef, useContext, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from './Navbar.module.css';
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
-const toAbsUrl = (url) => url && url.startsWith('/') ? `${API_BASE}${url}` : url;
 import { searchUsers, getHashtags } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
 import { NotificationContext } from '../../../contexts/NotificationContext';
@@ -15,17 +13,14 @@ import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
 export default function Navbar() {
   const router = useRouter();
   const { unreadCount } = useContext(NotificationContext);
-  const { userId, setShowLoginModal, setRedirectUrl } = useContext(AuthContext);
-  const [profileImageUrl, setProfileImageUrl] = useState(null);
+  const { userId, setShowLoginModal, setRedirectUrl, navProfileImageUrl, setNavProfileImageUrl } = useContext(AuthContext);
   const [username, setUsername] = useState('');
-  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
-    setImgError(false);
     getUserProfile(userId).then((data) => {
       if (data) {
-        setProfileImageUrl(data.profileImageUrl ?? null);
+        setNavProfileImageUrl(data.profileImageUrl ?? null);
         setUsername(data.username ?? '');
       }
     });
@@ -177,7 +172,7 @@ export default function Navbar() {
           </Link>
           <Link href="/profile" className={styles.profileBtn} title="프로필" onClick={handleProfileClick}>
             <FetchedAvatar
-              src={profileImageUrl}
+              src={navProfileImageUrl}
               fallbackChar={username ? username[0].toUpperCase() : '?'}
               fallbackColor={avatarColor(userId)}
               className={styles.profileImg}
