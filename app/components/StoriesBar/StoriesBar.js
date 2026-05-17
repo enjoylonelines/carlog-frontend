@@ -5,7 +5,7 @@ import { AuthContext } from '@/contexts/AuthContext';
 import { NotificationContext } from '@/contexts/NotificationContext';
 import { getFollowings, increaseBoardHit } from '@/api';
 import { avatarColor } from '@/app/utils/avatar';
-import { onFollowEvent } from '@/app/utils/followCache';
+import { onFeedEvent } from '@/app/utils/feedEventBus';
 import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
 import styles from './StoriesBar.module.css';
 
@@ -34,13 +34,13 @@ export default function StoriesBar() {
 
   // 팔로우/언팔로우 이벤트 수신 → 스토리 목록 즉시 반영
   useEffect(() => {
-    return onFollowEvent(({ type, targetId, username, profileImageUrl }) => {
-      if (type === 'follow') {
+    return onFeedEvent(({ type, targetId, username, profileImageUrl }) => {
+      if (type === 'FOLLOW') {
         setFollowings((prev) => {
           if (prev.some((f) => f.targetId === targetId)) return prev;
           return [...prev, { targetId, username, profileImageUrl }];
         });
-      } else {
+      } else if (type === 'UNFOLLOW') {
         setFollowings((prev) => prev.filter((f) => f.targetId !== targetId));
       }
     });

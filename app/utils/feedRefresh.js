@@ -1,11 +1,10 @@
-export const FEED_STALE_KEY = 'feed_stale';
-export const BOARD_SAVED_EVENT = 'carlog:board-saved';
-export const BOARD_DELETED_EVENT = 'carlog:board-deleted';
-export const BOARD_VIEWED_EVENT = 'carlog:board-viewed';
+import { emitFeedEvent } from './feedEventBus';
 
-export function markFeedStale(eventName = BOARD_SAVED_EVENT) {
+export const FEED_STALE_KEY = 'feed_stale';
+
+export function markFeedStale() {
   sessionStorage.setItem(FEED_STALE_KEY, '1');
-  window.dispatchEvent(new Event(eventName));
+  emitFeedEvent({ type: 'BOARD_SAVED' });
 }
 
 export function clearFeedStale() {
@@ -17,5 +16,5 @@ export function isFeedStale() {
 }
 
 export function markBoardViewed(boardId) {
-  window.dispatchEvent(new CustomEvent(BOARD_VIEWED_EVENT, { detail: { boardId: Number(boardId) } }));
+  emitFeedEvent({ type: 'BOARD_VIEWED', boardId: Number(boardId) });
 }
