@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { getUserProfile, searchBoards, increaseBoardHit } from '../../../api';
+import { toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 const toAbsUrl = (url) => (url && url.startsWith('/') ? `${API_BASE}${url}` : url);
 import { getLikedBoards } from '../../../api/like';
@@ -23,10 +24,18 @@ const MOCK_PROFILE = {
   boardCount: 0,
 };
 
-function GridImage({ src, className }) {
-  const [failed, setFailed] = useState(false);
-  const imgSrc = !failed && isSrc(src) ? src : '/no-image.svg';
-  return <img src={imgSrc} alt="" className={className} onError={() => setFailed(true)} />;
+function GridImage({ src, backupSrc, className }) {
+  const imgSrc = isSrc(src) ? toMediaSrc(src) : '/no-image.svg';
+  return (
+    <img
+      src={imgSrc}
+      alt=""
+      className={className}
+      onError={(e) => {
+        useBackupImageOnError(e, backupSrc);
+      }}
+    />
+  );
 }
 
 const GridIcon = () => (
@@ -289,7 +298,7 @@ export default function ProfileView() {
               <div className={styles.grid}>
                 {posts.map((post) => (
                   <button key={post.boardId} className={styles.cell} onClick={() => openBoard(post.boardId)}>
-                    <GridImage src={post.mediaUrls?.[0]} className={styles.img} />
+                    <GridImage src={post.mediaUrls?.[0]} backupSrc={post.mediaBackupUrls?.[0]} className={styles.img} />
                   </button>
                 ))}
               </div>
@@ -306,7 +315,7 @@ export default function ProfileView() {
               <div className={styles.grid}>
                 {likedPosts.map((post) => (
                   <button key={post.boardId} className={styles.cell} onClick={() => openBoard(post.boardId)}>
-                    <GridImage src={post.mediaUrl} className={styles.img} />
+                    <GridImage src={post.mediaUrl} backupSrc={post.mediaBackupUrls?.[0]} className={styles.img} />
                   </button>
                 ))}
               </div>

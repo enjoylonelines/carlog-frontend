@@ -7,6 +7,7 @@ import { searchBoards } from '../../../api';
 import client from '../../../api/client';
 import { avatarColor } from '../../utils/avatar';
 import { followCache } from '../../utils/followCache';
+import { toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
 import styles from './UserProfileView.module.css';
 
 export default function UserProfileView({ userId }) {
@@ -171,12 +172,12 @@ export default function UserProfileView({ userId }) {
           {posts.map((post) => (
             <button key={post.boardId} className={styles.cell} onClick={() => openBoard(post.boardId)}>
               <img
-                src={post.mediaUrls?.[0] || '/no-image.svg'}
+                src={post.mediaUrls?.[0] ? toMediaSrc(post.mediaUrls[0]) : '/no-image.svg'}
                 alt=""
                 className={styles.img}
                 loading="lazy"
                 onError={(e) => {
-                  e.currentTarget.src = '/no-image.svg';
+                  useBackupImageOnError(e, post.mediaBackupUrls?.[0]);
                 }}
               />
             </button>
