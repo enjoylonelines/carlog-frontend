@@ -395,10 +395,12 @@ export default function BoardDetailPage() {
   };
 
   const handleCommentDelete = async (commentId) => {
+    const target = comments.find((c) => c.commentId === commentId);
+    const deletedCount = 1 + Math.max(0, target?.replyCount || 0);
     await deleteComment(commentId);
     sessionStorage.setItem('feed_stale', '1');
     setComments((prev) => prev.filter((c) => c.commentId !== commentId));
-    setTotalCommentCount((prev) => Math.max(0, prev - 1));
+    setTotalCommentCount((prev) => Math.max(0, prev - deletedCount));
     if (editingCommentId === commentId) {
       setEditingCommentId(null);
       setCommentText('');
