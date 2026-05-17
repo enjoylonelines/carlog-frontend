@@ -28,14 +28,20 @@ export const useBackupImageOnError = (event, backupUrl) => {
 };
 
 // fetch로 이미지를 가져와 blob URL로 변환 (ngrok 헤더 우회)
+// null = 로딩 중 (배경만 표시), 'ERROR' = 실패, blob: = 성공
 export const useFetchedImage = (url) => {
-  const [blobUrl, setBlobUrl] = useState(null);
+  const [state, setState] = useState(null);
 
   useEffect(() => {
-    if (!url) return;
+    if (!url) {
+      setState('ERROR');
+      return;
+    }
+    setState(null);
     const absUrl = toMediaSrc(url);
     const headers = { 'ngrok-skip-browser-warning': 'true' };
     let objectUrl = null;
+    let cancelled = false;
 
     fetch(absUrl, { headers })
       .then((res) => {
@@ -43,15 +49,19 @@ export const useFetchedImage = (url) => {
         return res.blob();
       })
       .then((blob) => {
+        if (cancelled) return;
         objectUrl = URL.createObjectURL(blob);
-        setBlobUrl(objectUrl);
+        setState(objectUrl);
       })
-      .catch(() => setBlobUrl('/no-image.svg'));
+      .catch(() => {
+        if (!cancelled) setState('ERROR');
+      });
 
     return () => {
+      cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [url]);
 
-  return blobUrl;
+  return state;
 };

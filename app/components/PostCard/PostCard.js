@@ -16,7 +16,8 @@ const toAbsUrl = (url) => url && url.startsWith('/') ? `${API_BASE}${url}` : url
 
 function FetchedImage({ url, backupUrl, alt, className, loading }) {
   const src = useFetchedImage(url || backupUrl);
-  return <img src={src || '/no-image.svg'} alt={alt} className={className} loading={loading} />;
+  if (src === null) return <div className="imgSkeleton"><span className="imgSkeletonIcon" /></div>;
+  return <img src={src === 'ERROR' ? '/no-image.svg' : src} alt={alt} className={className} loading={loading} />;
 }
 
 function timeAgo(dateStr) {

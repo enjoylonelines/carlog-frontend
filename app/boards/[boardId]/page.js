@@ -20,12 +20,18 @@ import {
 } from '../../../api';
 import { avatarColor } from '../../utils/avatar';
 import { BOARD_DELETED_EVENT, markFeedStale } from '../../utils/feedRefresh';
-import { toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
+import { useFetchedImage } from '../../utils/mediaFallback';
 import { NotificationContext } from '../../../contexts/NotificationContext';
 import { likeCache } from '../../utils/likeCache';
 import { followCache } from '../../utils/followCache';
 import styles from './page.module.css';
 import { createLike, deleteLike } from '@/api/like';
+
+function FetchedImage({ url, alt, className }) {
+  const src = useFetchedImage(url);
+  if (src === null) return <div className="imgSkeleton"><span className="imgSkeletonIcon" /></div>;
+  return <img src={src === 'ERROR' ? '/no-image.svg' : src} alt={alt} className={className} />;
+}
 
 function Avatar({ userId, username, profileImageUrl, className }) {
   const [errSrc, setErrSrc] = useState(null);
@@ -542,13 +548,10 @@ export default function BoardDetailPage() {
               <div className={styles.mediaList} ref={mediaListRef} onScroll={handleMediaScroll}>
                 {mediaUrls.map((url, index) => (
                   <div className={styles.imageWrap} key={`${url}-${index}`}>
-                    <img
-                      src={url ? toMediaSrc(url) : '/no-image.svg'}
+                    <FetchedImage
+                      url={url}
                       alt={`게시물 이미지 ${index + 1}`}
                       className={styles.image}
-                      onError={(e) => {
-                        useBackupImageOnError(e, mediaBackupUrls[index]);
-                      }}
                     />
                   </div>
                 ))}

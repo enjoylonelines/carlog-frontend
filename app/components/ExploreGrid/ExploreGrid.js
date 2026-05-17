@@ -4,7 +4,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import HashtagBar from '../HashtagBar/HashtagBar';
 import { getHashtags, getExploreBoards, increaseBoardHit } from '../../../api';
 import { useScrollRestore } from '../../hooks/useScrollRestore';
-import { toMediaSrc, useBackupImageOnError } from '../../utils/mediaFallback';
+import { useFetchedImage } from '../../utils/mediaFallback';
+
+function GridImage({ url, alt }) {
+  const src = useFetchedImage(url);
+  if (src === null) return <div className="imgSkeleton"><span className="imgSkeletonIcon" /></div>;
+  return <img src={src === 'ERROR' ? '/no-image.svg' : src} alt={alt} className={styles.img} />;
+}
 import { markBoardViewed } from '../../utils/feedRefresh';
 import styles from './ExploreGrid.module.css';
 
@@ -138,8 +144,7 @@ export default function ExploreGrid() {
       <div className={styles.wrap}>
         <div className={styles.grid}>
           {displayed.map((board) => {
-            const imageUrl = board.mediaUrls?.[0] || '/no-image.svg';
-            const backupImageUrl = board.mediaBackupUrls?.[0];
+            const imageUrl = board.mediaUrls?.[0];
             const tag = board.hashtags?.[0];
             return (
               <button
@@ -147,15 +152,7 @@ export default function ExploreGrid() {
                 className={styles.cell}
                 onClick={() => openBoard(board.boardId)}
               >
-                <img
-                  src={toMediaSrc(imageUrl)}
-                  alt={tag ? `#${tag}` : '게시물'}
-                  className={styles.img}
-                  loading="lazy"
-                  onError={(e) => {
-                    useBackupImageOnError(e, backupImageUrl);
-                  }}
-                />
+                <GridImage url={imageUrl} alt={tag ? `#${tag}` : '게시물'} />
                 <div className={styles.overlay}>
                   {tag && <span className={styles.overlayTag}>#{tag}</span>}
                   <div className={styles.overlayStats}>
