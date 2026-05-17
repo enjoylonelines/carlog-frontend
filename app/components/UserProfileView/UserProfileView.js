@@ -19,7 +19,7 @@ import styles from './UserProfileView.module.css';
 
 export default function UserProfileView({ userId }) {
   const router = useRouter();
-  const { userId: MY_USER_ID } = useContext(AuthContext);
+  const { userId: MY_USER_ID, setShowLoginModal, setRedirectUrl } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [following, setFollowing] = useState(() => followCache[userId] ?? null);
   const [followLoading, setFollowLoading] = useState(false);
@@ -48,6 +48,12 @@ export default function UserProfileView({ userId }) {
   }, [userId]);
 
   async function handleFollow() {
+    if (!MY_USER_ID) {
+      setRedirectUrl(`/users/${userId}`);
+      setShowLoginModal(true);
+      return;
+    }
+
     setFollowLoading(true);
     const next = !following;
     if (next) {
@@ -64,6 +70,12 @@ export default function UserProfileView({ userId }) {
   }
 
   async function openBoard(boardId) {
+    if (!MY_USER_ID) {
+      setRedirectUrl(`/boards/${boardId}`);
+      setShowLoginModal(true);
+      return;
+    }
+
     try {
       await increaseBoardHit(boardId);
     } finally {
