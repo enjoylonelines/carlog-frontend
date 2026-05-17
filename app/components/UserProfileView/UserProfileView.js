@@ -6,7 +6,7 @@ import { getUserProfile, checkFollow, followUser, unfollowUser, increaseBoardHit
 import { searchBoards } from '../../../api';
 import client from '../../../api/client';
 import { avatarColor } from '../../utils/avatar';
-import { followCache } from '../../utils/followCache';
+import { followCache } from '../../utils/sessionCache';
 import { useFetchedImage } from '../../utils/mediaFallback';
 import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
 

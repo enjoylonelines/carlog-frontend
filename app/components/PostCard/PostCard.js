@@ -5,8 +5,8 @@ import styles from './PostCard.module.css';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { checkFollow, followUser, unfollowUser, increaseBoardHit } from '../../../api';
 import { avatarColor as getAvatarColor } from '../../utils/avatar';
-import { followCache, emitFollowEvent } from '../../utils/followCache';
-import { likeCache } from '../../utils/likeCache';
+import { followCache, likeCache } from '../../utils/sessionCache';
+import { emitFeedEvent } from '../../utils/feedEventBus';
 import { isMediaSrc, toMediaSrc, useBackupImageOnError, useFetchedImage } from '../../utils/mediaFallback';
 import FetchedAvatar from '../FetchedAvatar/FetchedAvatar';
 import { markBoardViewed } from '../../utils/feedRefresh';
@@ -116,10 +116,10 @@ export default function PostCard({ post }) {
     setFollowing(next);
     followCache[userId] = next;
     if (next) {
-      emitFollowEvent({ type: 'follow', targetId: userId, username, profileImageUrl });
+      emitFeedEvent({ type: 'FOLLOW', targetId: userId, username, profileImageUrl });
       await followUser({ userId: MY_USER_ID, targetId: userId });
     } else {
-      emitFollowEvent({ type: 'unfollow', targetId: userId });
+      emitFeedEvent({ type: 'UNFOLLOW', targetId: userId });
       await unfollowUser({ userId: MY_USER_ID, targetId: userId });
     }
   };
