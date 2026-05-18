@@ -2,7 +2,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import HashtagBar from '../HashtagBar/HashtagBar';
-import { getHashtags, getExploreBoards, increaseBoardHit } from '../../../api';
+import { getHashtags, getExploreBoards, searchBoards, increaseBoardHit } from '../../../api';
 import { useScrollRestore } from '../../hooks/useScrollRestore';
 import { useFetchedImage } from '../../utils/mediaFallback';
 
@@ -14,7 +14,7 @@ function GridImage({ url, alt }) {
 import { markBoardViewed } from '../../utils/feedRefresh';
 import styles from './ExploreGrid.module.css';
 
-// 모듈 레벨 캐시
+// 태그 없는 모드 전용 모듈 캐시 (스크롤 복원용)
 let _cachedItems = [];
 let _cachedHasNext = true;
 let _cachedPage = 1;
@@ -27,17 +27,35 @@ export default function ExploreGrid() {
   const restoreScroll = useScrollRestore('scroll_explore');
 
   const [hashtags, setHashtags] = useState([]);
-  const [items, setItems] = useState(_cachedItems);
-  const [hasNext, setHasNext] = useState(_cachedHasNext);
+  const [{ prevTag, items, hasNext }, setGridState] = useState(() => ({
+    prevTag: selectedTag,
+    items: selectedTag ? [] : _cachedItems,
+    hasNext: selectedTag ? true : _cachedHasNext,
+  }));
   const [loading, setLoading] = useState(false);
 
-  const pageRef = useRef(_cachedPage);
+  const selectedTagRef = useRef(selectedTag);
+  selectedTagRef.current = selectedTag;
+
+  const pageRef = useRef(selectedTag ? 1 : _cachedPage);
   const isLoadingRef = useRef(false);
+  const loadGenRef = useRef(0); // 태그 변경 시 진행 중 요청 무효화
   const sentinelRef = useRef(null);
   const scrollRestoredRef = useRef(false);
   const scrollPendingRef = useRef(false);
 
-  // 캐시된 items가 있을 때만 페인트 전 즉시 복원 — 없으면 loadMore 후 scrollPendingRef로 처리
+  // 태그 변경 감지: render 중 즉시 items 리셋
+  if (selectedTag !== prevTag) {
+    loadGenRef.current += 1;
+    isLoadingRef.current = false;
+    setGridState({
+      prevTag: selectedTag,
+      items: selectedTag ? [] : _cachedItems,
+      hasNext: selectedTag ? true : _cachedHasNext,
+    });
+    pageRef.current = selectedTag ? 1 : _cachedPage;
+  }
+
   useLayoutEffect(() => {
     if (_cachedItems.length > 0 && !selectedTag && !scrollRestoredRef.current) {
       scrollRestoredRef.current = true;
@@ -51,42 +69,61 @@ export default function ExploreGrid() {
     });
   }, []);
 
-  const loadMore = useCallback(
-    async (page, append) => {
-      if (isLoadingRef.current) return;
-      isLoadingRef.current = true;
-      setLoading(true);
+  // loadMore는 항상 selectedTagRef.current로 최신 태그를 읽음 → deps 불필요
+  const loadMore = useCallback(async (page, append) => {
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
+    setLoading(true);
 
-      const data = await getExploreBoards(page);
-      isLoadingRef.current = false;
-      setLoading(false);
+    const gen = loadGenRef.current;
+    const tag = selectedTagRef.current;
 
-      const boards = data?.boards ?? [];
-      setItems((prev) => {
-        const next = append ? [...prev, ...boards] : boards;
-        _cachedItems = next;
-        return next;
-      });
-      const more = data?.hasNext ?? false;
-      setHasNext(more);
-      _cachedHasNext = more;
-      _cachedPage = page;
-      pageRef.current = page;
+    let boards = [];
+    let more = false;
 
-      if (!append && !selectedTag && !scrollRestoredRef.current) {
-        scrollRestoredRef.current = true;
-        scrollPendingRef.current = true;
+    try {
+      if (tag) {
+        const data = await searchBoards({ tag, pageNo: page });
+        boards = data?.boards ?? [];
+        more = data?.hasNext ?? false;
+      } else {
+        const data = await getExploreBoards(page);
+        boards = data?.boards ?? [];
+        more = data?.hasNext ?? false;
       }
-    },
-    [restoreScroll, selectedTag],
-  );
+    } finally {
+      if (gen === loadGenRef.current) {
+        isLoadingRef.current = false;
+        setLoading(false);
+      }
+    }
 
+    // 태그가 바뀐 사이 응답이 온 경우 버림
+    if (gen !== loadGenRef.current) return;
+
+    setGridState((prev) => {
+      const next = append ? [...prev.items, ...boards] : boards;
+      if (!selectedTagRef.current) {
+        _cachedItems = next;
+        _cachedHasNext = more;
+        _cachedPage = page;
+      }
+      return { ...prev, items: next, hasNext: more };
+    });
+    pageRef.current = page;
+
+    if (!append && !selectedTagRef.current && !scrollRestoredRef.current) {
+      scrollRestoredRef.current = true;
+      scrollPendingRef.current = true;
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // items가 비어 있을 때 로드 (초기 진입 or 태그 변경 후)
   useEffect(() => {
-    if (_cachedItems.length > 0) return;
+    if (items.length > 0) return;
     loadMore(1, false);
-  }, [loadMore]);
+  }, [loadMore, items.length]);
 
-  // items가 DOM에 반영된 후 pending 스크롤 복원 실행 (새로고침 포함)
   useEffect(() => {
     if (scrollPendingRef.current && items.length > 0) {
       scrollPendingRef.current = false;
@@ -120,18 +157,16 @@ export default function ExploreGrid() {
     [selectedTag, router],
   );
 
-  const displayed = selectedTag ? items.filter((b) => b.hashtags?.includes(selectedTag)) : items;
-
   const openBoard = async (boardId) => {
     try {
       await increaseBoardHit(boardId);
       markBoardViewed(boardId);
-      setItems((prev) => {
-        const next = prev.map((item) => (
-          item.boardId === boardId ? { ...item, hitcount: (item.hitcount || 0) + 1 } : item
-        ));
-        _cachedItems = next;
-        return next;
+      setGridState((prev) => {
+        const next = prev.items.map((item) =>
+          item.boardId === boardId ? { ...item, hitcount: (item.hitcount || 0) + 1 } : item,
+        );
+        if (!selectedTagRef.current) _cachedItems = next;
+        return { ...prev, items: next };
       });
     } finally {
       router.push(`/boards/${boardId}`);
@@ -143,7 +178,7 @@ export default function ExploreGrid() {
       <HashtagBar hashtags={hashtags} selected={selectedTag} onSelect={handleTagSelect} />
       <div className={styles.wrap}>
         <div className={styles.grid}>
-          {displayed.map((board) => {
+          {items.map((board) => {
             const imageUrl = board.mediaUrls?.[0];
             const tag = board.hashtags?.[0];
             return (
@@ -175,7 +210,7 @@ export default function ExploreGrid() {
             );
           })}
 
-          {displayed.length === 0 && !loading && (
+          {items.length === 0 && !loading && (
             <div className={styles.empty}>
               <span>🚗</span>
               <p>게시물이 없어요.</p>
@@ -188,7 +223,7 @@ export default function ExploreGrid() {
             <div className={styles.spinner} />
           </div>
         )}
-        {hasNext && !selectedTag && <div ref={sentinelRef} style={{ height: 1 }} />}
+        {hasNext && <div ref={sentinelRef} style={{ height: 1 }} />}
       </div>
     </>
   );

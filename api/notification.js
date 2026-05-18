@@ -58,11 +58,23 @@ export const subscribeNotifications = (receiverId, onNotification, onRemoved) =>
           } else if (line.startsWith('data:')) {
             const data = line.slice(5).trim();
             if (eventName === 'notification') {
-              try { onNotification(JSON.parse(data)); } catch { /* 무시 */ }
+              try {
+                onNotification(JSON.parse(data));
+              } catch {
+                /* 무시 */
+              }
             } else if (eventName === 'board_deleted') {
-              try { onRemoved?.({ type: 'BOARD_DELETED', boardId: Number(data) }); } catch { /* 무시 */ }
+              try {
+                onRemoved?.({ type: 'BOARD_DELETED', boardId: Number(data) });
+              } catch {
+                /* 무시 */
+              }
             } else if (eventName === 'notification_removed') {
-              try { onRemoved?.(JSON.parse(data)); } catch { /* 무시 */ }
+              try {
+                onRemoved?.(JSON.parse(data));
+              } catch {
+                /* 무시 */
+              }
             }
             eventName = '';
           }
@@ -70,6 +82,7 @@ export const subscribeNotifications = (receiverId, onNotification, onRemoved) =>
       }
     } catch {
       // abort 시에는 재연결 안 함
+      // catch 없으면 에러를 위로 전파 > setTimeout 실행 x
     }
 
     // 연결이 끊겼고 닫힌 게 아니면 3초 후 재연결
